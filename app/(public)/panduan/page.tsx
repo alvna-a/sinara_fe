@@ -1,12 +1,23 @@
 'use client'
 
+import { useState, useEffect } from 'react'
+
 export default function Panduan() {
+  const [isMobile, setIsMobile] = useState<boolean>(false)
+
+  useEffect(() => {
+    const check = (): void => setIsMobile(window.innerWidth < 600)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+
   return (
     <>
       {/* ===================== */}
       {/* HERO PANDUAN */}
       {/* ===================== */}
-      <section style={{ background: '#F9FAFB', padding: '70px 40px 50px' }}>
+      <section style={{ background: 'linear-gradient(180deg, #E0E7FF 0%, #eef6ff 50%, #f8fafc 100%)', padding: '70px 40px 50px' }}>
         <div style={{ width: '90%', maxWidth: 800, margin: '0 auto', padding: '0 20px', textAlign: 'center' }}>
           <h1 style={{
             fontSize: '2.2rem',
@@ -17,7 +28,7 @@ export default function Panduan() {
             fontFamily: 'Poppins, sans-serif',
           }}>
             Pahami cara kerja dan{' '}
-            <span style={{ color: '#2563eb' }}>baca hasil rekomendasi</span>{' '}
+            <span style={{ color: '#4F46E5' }}>baca hasil rekomendasi</span>{' '}
             dengan lebih tepat
           </h1>
           <p style={{ color: '#6b7280', fontSize: 16, maxWidth: 700, margin: '0 auto', fontFamily: 'Poppins, sans-serif' }}>
@@ -30,9 +41,9 @@ export default function Panduan() {
       {/* ===================== */}
       {/* CARA KERJA SISTEM */}
       {/* ===================== */}
-      <section style={{ background: '#fff', padding: '70px 40px' }}>
+      <section style={{ background: '#fff', padding: '40px 30px' }}>
         <div style={{ width: '90%', maxWidth: 1200, margin: '0 auto', padding: '0 20px' }}>
-          <h2 style={{ fontWeight: 700, fontSize: '1.9rem', marginBottom: 48, color: '#18181b', fontFamily: 'Poppins, sans-serif', textAlign: 'left' }}>
+          <h2 style={{ fontWeight: 700, fontSize: '1.9rem', marginBottom: 10, color: '#18181b', fontFamily: 'Poppins, sans-serif', textAlign: 'center' }}>
             Cara Kerja Sistem
           </h2>
 
@@ -41,64 +52,32 @@ export default function Panduan() {
           <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-            gap: 24,
+            gap: 20,
           }}>
             {[
               {
                 num: '1',
                 title: 'Pilih Skill yang Dimiliki',
                 desc: 'Pilih skill yang kamu kuasai untuk di analisis awal.',
-                icon: (
-                  <svg width="64" height="52" viewBox="0 0 64 52" fill="none">
-                    <rect x="4" y="4" width="56" height="44" rx="6" fill="#e0e7ff" />
-                    <rect x="12" y="14" width="28" height="4" rx="2" fill="#6366f1" />
-                    <rect x="12" y="22" width="20" height="4" rx="2" fill="#a5b4fc" />
-                    <rect x="12" y="30" width="24" height="4" rx="2" fill="#a5b4fc" />
-                    <rect x="46" y="14" width="6" height="6" rx="1" fill="#6366f1" />
-                    <rect x="46" y="22" width="6" height="6" rx="1" fill="#a5b4fc" />
-                    <rect x="46" y="30" width="6" height="6" rx="1" fill="#a5b4fc" />
-                  </svg>
-                )
+                image: '/panduan/logo1.png'
               },
               {
                 num: '2',
                 title: 'Sistem Membentuk Representasi Teks',
                 desc: 'Sistem membentuk profil teks dengan pembobotan kata.',
-                icon: (
-                  <svg width="64" height="52" viewBox="0 0 64 52" fill="none">
-                    <rect x="8" y="4" width="48" height="44" rx="6" fill="#e0e7ff" />
-                    <rect x="16" y="12" width="32" height="5" rx="2" fill="#6366f1" />
-                    <rect x="16" y="21" width="24" height="4" rx="2" fill="#a5b4fc" />
-                    <rect x="16" y="29" width="28" height="4" rx="2" fill="#a5b4fc" />
-                    <rect x="16" y="37" width="20" height="4" rx="2" fill="#c7d2fe" />
-                  </svg>
-                )
+                image: '/panduan/logo2.png'
               },
               {
                 num: '3',
                 title: 'Perhitungan Kesesuaian',
                 desc: 'Menghitung cosine similarity untuk kesesuaian.',
-                icon: (
-                  <svg width="64" height="52" viewBox="0 0 64 52" fill="none">
-                    <polyline points="8,40 20,28 32,32 44,16 56,20" stroke="#6366f1" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-                    <circle cx="44" cy="16" r="4" fill="#6366f1" />
-                    <circle cx="32" cy="32" r="3" fill="#a5b4fc" />
-                    <circle cx="20" cy="28" r="3" fill="#a5b4fc" />
-                  </svg>
-                )
+                image: '/panduan/logo3.png'
               },
               {
                 num: '4',
                 title: 'Ranking Rekomendasi',
                 desc: 'Menampilkan divisi dengan kesesuaian tertinggi.',
-                icon: (
-                  <svg width="64" height="52" viewBox="0 0 64 52" fill="none">
-                    <rect x="8" y="28" width="12" height="18" rx="3" fill="#a5b4fc" />
-                    <rect x="26" y="18" width="12" height="28" rx="3" fill="#6366f1" />
-                    <rect x="44" y="22" width="12" height="24" rx="3" fill="#818cf8" />
-                    <polygon points="32,6 34,12 40,12 35,16 37,22 32,18 27,22 29,16 24,12 30,12" fill="#f59e0b" />
-                  </svg>
-                )
+                image: '/panduan/logo4.png'
               }
             ].map((item, i) => (
               <div
@@ -111,7 +90,7 @@ export default function Panduan() {
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  gap: 12,
+                  gap: 5,
                 }}
               >
                 <div style={{
@@ -133,7 +112,9 @@ export default function Panduan() {
                 <div style={{ fontWeight: 600, fontSize: 14, color: '#18181b', lineHeight: 1.4, fontFamily: 'Poppins, sans-serif' }}>
                   {item.title}
                 </div>
-                <div style={{ margin: '8px 0' }}>{item.icon}</div>
+                <div style={{ margin: '16px 0' }}>
+                  <img src={item.image} alt={item.title} style={{ width: 96, height: 96, objectFit: 'contain' }} />
+                </div>
                 <p style={{ fontSize: 13, color: '#6b7280', lineHeight: 1.5, fontFamily: 'Poppins, sans-serif', margin: 0 }}>{item.desc}</p>
               </div>
             ))}
@@ -144,11 +125,13 @@ export default function Panduan() {
       {/* ===================== */}
       {/* CARA MEMBACA HASIL REKOMENDASI */}
       {/* ===================== */}
-      <section style={{ background: '#F9FAFB', padding: '70px 40px' }}>
+      <section style={{ background: '#fff', padding: '40px 30px' }}>
         <div style={{ width: '90%', maxWidth: 1200, margin: '0 auto', padding: '0 20px' }}>
-          <h2 style={{ fontWeight: 700, fontSize: '1.9rem', marginBottom: 32, color: '#18181b', fontFamily: 'Poppins, sans-serif', textAlign: 'left' }}>
+          <h2 style={{ fontWeight: 700, fontSize: '1.9rem', marginBottom: 10, color: '#18181b', fontFamily: 'Poppins, sans-serif', textAlign: 'center' }}>
             Cara Membaca Hasil Rekomendasi
           </h2>
+
+          <div style={{ borderTop: '1px solid #e5e7eb', marginBottom: 48 }} />
 
           <div style={{
             background: '#E0E7FF',
@@ -162,9 +145,13 @@ export default function Panduan() {
               Sistem menampilkan daftar divisi berdasarkan tingkat kesesuaian antara skill yang kamu miliki dengan kebutuhan masing-masing divisi. Gunakan hasil ini sebagai bahan pertimbangan yang lebih terarah.
             </p>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: isMobile ? 'repeat(auto-fit, minmax(240px, 1fr))' : 'repeat(2, 1fr)',
+              gap: 20,
+            }}>
               {/* Card 1 */}
-              <div style={{ background: 'white', borderRadius: 14, padding: '22px 24px' }}>
+              <div style={{ background: 'white', borderRadius: 14, padding: '22px 24px', display: 'flex', flexDirection: 'column', minHeight: 280 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
                   <div style={{
                     width: 26, height: 26, borderRadius: '50%',
@@ -177,28 +164,30 @@ export default function Panduan() {
                     Perhatikan Persentase Kesesuaian
                   </span>
                 </div>
-                <p style={{ fontSize: 13, color: '#6b7280', lineHeight: 1.6, marginBottom: 14, fontFamily: 'Poppins, sans-serif', margin: '0 0 14px' }}>
+                <p style={{ fontSize: 13, color: '#6b7280', lineHeight: 1.6, fontFamily: 'Poppins, sans-serif', margin: '0 0 14px' }}>
                   Persentase merupakan beberapa nilai skill yang kamu pilih dengan kebutuhan skill pada suatu divisi. Semakin tinggi nilainya, semakin berpotensi divisi tersebut cocok dengan kemampuanmu.
                 </p>
-                {[
-                  { label: 'Divisi A', pct: 85, color: '#6366f1' },
-                  { label: 'Divisi B', pct: 65, color: '#818cf8' },
-                  { label: 'Divisi C', pct: 45, color: '#a5b4fc' },
-                ].map((d, i) => (
-                  <div key={i} style={{ marginBottom: 8 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-                      <span style={{ fontSize: 12, color: '#374151', fontFamily: 'Poppins, sans-serif' }}>{d.label}</span>
-                      <span style={{ fontSize: 12, color: '#374151', fontFamily: 'Poppins, sans-serif' }}>{d.pct}%</span>
+                <div style={{ marginTop: 'auto' }}>
+                  {[
+                    { label: 'Divisi A', pct: 85, color: '#6366f1' },
+                    { label: 'Divisi B', pct: 65, color: '#818cf8' },
+                    { label: 'Divisi C', pct: 45, color: '#a5b4fc' },
+                  ].map((d, i) => (
+                    <div key={i} style={{ marginBottom: 8 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                        <span style={{ fontSize: 12, color: '#374151', fontFamily: 'Poppins, sans-serif' }}>{d.label}</span>
+                        <span style={{ fontSize: 12, color: '#374151', fontFamily: 'Poppins, sans-serif' }}>{d.pct}%</span>
+                      </div>
+                      <div style={{ height: 6, background: '#e5e7eb', borderRadius: 4, overflow: 'hidden' }}>
+                        <div style={{ width: `${d.pct}%`, height: '100%', background: d.color, borderRadius: 4 }} />
+                      </div>
                     </div>
-                    <div style={{ height: 6, background: '#e5e7eb', borderRadius: 4, overflow: 'hidden' }}>
-                      <div style={{ width: `${d.pct}%`, height: '100%', background: d.color, borderRadius: 4 }} />
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
 
               {/* Card 2 */}
-              <div style={{ background: 'white', borderRadius: 14, padding: '22px 24px' }}>
+              <div style={{ background: 'white', borderRadius: 14, padding: '22px 24px', display: 'flex', flexDirection: 'column', minHeight: 280 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
                   <div style={{
                     width: 26, height: 26, borderRadius: '50%',
@@ -211,14 +200,14 @@ export default function Panduan() {
                     Bandingkan Beberapa Rekomendasi
                   </span>
                 </div>
-                <p style={{ fontSize: 13, color: '#6b7280', lineHeight: 1.6, marginBottom: 16, fontFamily: 'Poppins, sans-serif', margin: '0 0 16px' }}>
+                <p style={{ fontSize: 13, color: '#6b7280', lineHeight: 1.6, fontFamily: 'Poppins, sans-serif', margin: '0 0 16px', flexGrow: 1 }}>
                   Jangan langsung memilih satu hasil saja. Perhatikan beberapa divisi dengan persentase tertinggi dan bandingkan mana yang paling sesuai dengan minat dan tujuan magangmu.
                 </p>
-                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 'auto' }}>
                   {['Tingkat kesesuaian', 'Minat pribadi', 'Tujuan magang'].map((tag, i) => (
                     <span key={i} style={{
-                      background: i === 0 ? '#e0e7ff' : '#f3f4f6',
-                      color: i === 0 ? '#4338ca' : '#374151',
+                      background: '#e0e7ff',
+                      color: '#4338ca',
                       fontSize: 12, fontWeight: 500,
                       padding: '5px 12px', borderRadius: 20,
                       fontFamily: 'Poppins, sans-serif',
@@ -228,7 +217,7 @@ export default function Panduan() {
               </div>
 
               {/* Card 3 */}
-              <div style={{ background: 'white', borderRadius: 14, padding: '22px 24px' }}>
+              <div style={{ background: 'white', borderRadius: 14, padding: '22px 24px', display: 'flex', flexDirection: 'column', minHeight: 280 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
                   <div style={{
                     width: 26, height: 26, borderRadius: '50%',
@@ -241,13 +230,34 @@ export default function Panduan() {
                     Baca Detail Deskripsi Divisi
                   </span>
                 </div>
-                <p style={{ fontSize: 13, color: '#6b7280', lineHeight: 1.6, fontFamily: 'Poppins, sans-serif', margin: 0 }}>
+                <p style={{ fontSize: 13, color: '#6b7280', lineHeight: 1.6, fontFamily: 'Poppins, sans-serif', margin: '0 0 16px' }}>
                   Selain melihat persentase, penting juga untuk membaca deskripsi dan tanggung jawab pada divisi tersebut agar kamu memahami pekerjaan yang akan dilakukan.
                 </p>
+                <div style={{ marginTop: 'auto', background: '#f5f3ff', borderRadius: 12, padding: '14px 16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#6366f1', flexShrink: 0 }} />
+                    <div style={{ height: 6, width: '65%', background: '#6366f1', borderRadius: 4 }} />
+                  </div>
+                  {[['75%', '#a5b4fc'], ['55%', '#c7d2fe'], ['70%', '#a5b4fc'], ['45%', '#c7d2fe']].map(([w, c], i) => (
+                    <div key={i} style={{ height: 5, width: w, background: c, borderRadius: 4, marginBottom: 7 }} />
+                  ))}
+                  <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
+                    {['Deskripsi', 'Tanggung jawab', 'Skill'].map((label, i) => (
+                      <span key={i} style={{
+                        background: i === 0 ? '#e0e7ff' : 'white',
+                        color: i === 0 ? '#4338ca' : '#6b7280',
+                        fontSize: 10, fontWeight: 500,
+                        padding: '3px 8px', borderRadius: 20,
+                        fontFamily: 'Poppins, sans-serif',
+                        border: i !== 0 ? '1px solid #e5e7eb' : 'none',
+                      }}>{label}</span>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               {/* Card 4 */}
-              <div style={{ background: 'white', borderRadius: 14, padding: '22px 24px' }}>
+              <div style={{ background: 'white', borderRadius: 14, padding: '22px 24px', display: 'flex', flexDirection: 'column', minHeight: 280 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
                   <div style={{
                     width: 26, height: 26, borderRadius: '50%',
@@ -260,16 +270,16 @@ export default function Panduan() {
                     Gunakan Rekomendasi sebagai Pertimbangan
                   </span>
                 </div>
-                <p style={{ fontSize: 13, color: '#6b7280', lineHeight: 1.6, marginBottom: 14, fontFamily: 'Poppins, sans-serif', margin: '0 0 14px' }}>
+                <p style={{ fontSize: 13, color: '#6b7280', lineHeight: 1.6, fontFamily: 'Poppins, sans-serif', margin: '0 0 14px', flexGrow: 1 }}>
                   Hasil rekomendasi membantu mempersempit gambaran divisi yang cocok, namun keputusan akhir tetap berada pada pilihan kamu sesuai minat dan rencana kamu.
                 </p>
-                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 'auto' }}>
                   {['Bukan keputusan aktif', 'Tetap sesuaikan minat'].map((tag, i) => (
                     <span key={i} style={{
-                      background: '#f3f4f6',
-                      color: '#374151',
-                      fontSize: 11, fontWeight: 500,
-                      padding: '5px 10px', borderRadius: 20,
+                      background: '#e0e7ff',
+                      color: '#4338ca',
+                      fontSize: 12, fontWeight: 500,
+                      padding: '5px 12px', borderRadius: 20,
                       fontFamily: 'Poppins, sans-serif',
                     }}>{tag}</span>
                   ))}
@@ -281,75 +291,15 @@ export default function Panduan() {
       </section>
 
       {/* ===================== */}
-      {/* TIPS MENDAPATKAN REKOMENDASI AKURAT */}
-      {/* ===================== */}
-      <section style={{ background: '#fff', padding: '70px 40px' }}>
-        <div style={{ width: '90%', maxWidth: 1200, margin: '0 auto', padding: '0 20px' }}>
-          <h2 style={{ fontWeight: 700, fontSize: '1.9rem', marginBottom: 40, color: '#18181b', fontFamily: 'Poppins, sans-serif', textAlign: 'left' }}>
-            Tips Mendapatkan Rekomendasi Akurat
-          </h2>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 900, margin: '0 auto' }}>
-            {[
-              {
-                title: 'Pilih skill yang benar-benar kamu kuasai',
-                desc: 'Fokus hanya pada skill yang sudah kamu kuasai atau pakai.'
-              },
-              {
-                title: 'Hindari skill yang tidak relevan',
-                desc: 'Kurangi pilihan skill yang tidak sesuai dengan posisi yang diminati.'
-              },
-              {
-                title: 'Perhatikan persentase kesesuaian',
-                desc: 'Angka kesesuaian adalah penting, namun bukan satu-satunya faktor.'
-              },
-              {
-                title: 'Tinjau detail divisi sebelum memutuskan',
-                desc: 'Perhatikan deskripsi dan persyaratan divisi terlebih dahulu.'
-              }
-            ].map((tip, i) => (
-              <div
-                key={i}
-                style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: 16,
-                  background: '#F9FAFB',
-                  borderRadius: 12,
-                  padding: '18px 24px',
-                  border: '1px solid #e5e7eb',
-                }}
-              >
-                <div style={{
-                  width: 28, height: 28, borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #6366f1, #818cf8)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  flexShrink: 0, marginTop: 2,
-                }}>
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <path d="M2.5 7.5L5.5 10.5L11.5 4" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </div>
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: 15, color: '#18181b', marginBottom: 4, fontFamily: 'Poppins, sans-serif' }}>
-                    {tip.title}
-                  </div>
-                  <p style={{ fontSize: 13, color: '#6b7280', fontFamily: 'Poppins, sans-serif', margin: 0 }}>{tip.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ===================== */}
       {/* BATASAN SISTEM */}
       {/* ===================== */}
-      <section style={{ background: '#F9FAFB', padding: '70px 40px' }}>
+      <section style={{ background: '#F9FAFB', padding: '40px 30px' }}>
         <div style={{ width: '90%', maxWidth: 1200, margin: '0 auto', padding: '0 20px' }}>
-          <h2 style={{ fontWeight: 700, fontSize: '1.9rem', marginBottom: 40, color: '#18181b', fontFamily: 'Poppins, sans-serif', textAlign: 'left' }}>
+          <h2 style={{ fontWeight: 700, fontSize: '1.9rem', marginBottom: 10, color: '#18181b', fontFamily: 'Poppins, sans-serif', textAlign: 'center' }}>
             Batasan Sistem
           </h2>
+
+          <div style={{ borderTop: '1px solid #e5e7eb', marginBottom: 48 }} />
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 48, alignItems: 'start' }}>
             {/* Left */}
@@ -413,7 +363,7 @@ export default function Panduan() {
                   padding: '20px 22px',
                   marginBottom: 20,
                 }}>
-                  <p style={{ fontSize: 11, fontWeight: 500, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8, fontFamily: 'Poppins, sans-serif', margin: '0 0 8px' }}>
+                  <p style={{ fontSize: 11, fontWeight: 500, color: '#18181b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8, fontFamily: 'Poppins, sans-serif', margin: '0 0 8px' }}>
                     Inti keputusan
                   </p>
                   <p style={{ fontWeight: 600, fontSize: 15, color: '#18181b', marginBottom: 6, fontFamily: 'Poppins, sans-serif', margin: '0 0 6px' }}>
@@ -446,5 +396,5 @@ export default function Panduan() {
         </div>
       </section>
     </>
-  );
+  )
 }
