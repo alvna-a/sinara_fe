@@ -5,7 +5,7 @@ const footerLinks = [
   { label: "Panduan Sistem", href: "/panduan" },
   { label: "Fitur", href: "/#fitur" },
   { label: "Contact", href: "/#contact" },
-  { label: "FAQs", href: "/#faqs" },
+  { label: "FAQs", href: "/faqs" },
 ];
 
 export default function PublicFooter() {
