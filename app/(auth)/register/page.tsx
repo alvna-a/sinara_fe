@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { apiPost } from "@/services/api";
 
 type Role = "calon" | "alumni";
 type Step = 1 | 2;
@@ -10,6 +12,7 @@ const currentYear = new Date().getFullYear();
 const years = Array.from({ length: 10 }, (_, i) => currentYear - i);
 
 export default function RegisterPage() {
+  const router = useRouter();
   const [step, setStep] = useState<Step>(1);
   const [role, setRole] = useState<Role>("calon");
 
@@ -23,6 +26,7 @@ export default function RegisterPage() {
   const [kelas, setKelas] = useState("");
   const [angkatan, setAngkatan] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const steps = [
     { label: "Isi data diri dan identitas akun" },
@@ -42,7 +46,36 @@ export default function RegisterPage() {
   const handleStep2 = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => setLoading(false), 1500);
+    setError(null);
+
+    try {
+      const res = await apiPost("/register", {
+        name,
+        nim,
+        email,
+        password,
+        role,
+        phone,
+        kelas,
+        angkatan,
+      });
+
+      if (res.access_token) {
+        localStorage.setItem("token", res.access_token);
+        localStorage.setItem("user", JSON.stringify(res.user));
+        router.push(role === "calon" ? "/calon/dashboard" : "/alumni/dashboard");
+      } else {
+        setError(res.message || "Registrasi gagal. Silakan coba lagi.");
+      }
+    } catch {
+      setError("Tidak dapat terhubung ke server.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSkip = () => {
+    router.push(role === "calon" ? "/calon/dashboard" : "/alumni/dashboard");
   };
 
   return (
@@ -240,6 +273,13 @@ export default function RegisterPage() {
                   </p>
                 </div>
 
+                {/* Error Message */}
+                {error && (
+                  <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-xl mb-4">
+                    {error}
+                  </div>
+                )}
+
                 <form onSubmit={handleStep2} className="flex flex-col gap-4">
                   <div className="flex flex-col gap-1.5">
                     <label className="text-sm font-medium text-gray-700">Nomor Telephone</label>
@@ -288,7 +328,7 @@ export default function RegisterPage() {
                 </form>
 
                 <button
-                  onClick={() => {}}
+                  onClick={handleSkip}
                   className="w-full text-center text-sm text-gray-400 hover:text-gray-600 mt-4 transition"
                 >
                   Lewati Langkah ini

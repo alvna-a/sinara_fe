@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { apiPost } from "@/services/api";
 
 type UserRole = "alumni" | "calon" | "admin";
 
@@ -39,17 +41,37 @@ const tips = [
 ];
 
 export default function LoginPage() {
+  const router = useRouter();
   const [selectedRole, setSelectedRole] = useState<UserRole>("alumni");
   const [nim, setNim] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // TODO: connect to Laravel API
-    setTimeout(() => setLoading(false), 1500);
+    setError(null);
+
+    try {
+      const res = await apiPost("/login", { nim, password, role: selectedRole });
+
+      if (res.access_token) {
+        localStorage.setItem("token", res.access_token);
+        localStorage.setItem("user", JSON.stringify(res.user));
+
+      if (selectedRole === "admin") router.push("/dashboard_admin");
+      else if (selectedRole === "alumni") router.push("/dashboard_alumni");
+      else router.push("/dashboard_calon");
+      } else {
+        setError(res.message || "Login gagal. Periksa NIM dan password.");
+      }
+    } catch {
+      setError("Tidak dapat terhubung ke server.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -178,6 +200,13 @@ export default function LoginPage() {
                 </button>
               </div>
             </div>
+
+            {/* Error Message */}
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-xl">
+                {error}
+              </div>
+            )}
 
             {/* Submit Button */}
             <button
