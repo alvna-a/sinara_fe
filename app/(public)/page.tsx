@@ -15,11 +15,13 @@ export default function Home() {
           <div>
             <p className="font-semibold text-gray-500 mb-2">Halo, Sahabat Mahasiswa</p>
             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 leading-tight mb-4">
-              Temukan Magang Impian Sesuai Skill Kamu !!
+              Lagi cari magang yang cocok sama skill kamu?
             </h1>
             <p className="text-gray-500 text-lg max-w-lg mt-3">
-              Kami membantumu menemukan divisi magang yang benar-benar sesuai dengan kemampuan dan minatmu.
-              Dapatkan ranking posisi yang paling relevan untukmu.
+              Di sini, kamu bisa nemuin posisi magang yang bener-bener sesuai minat dan kemampuan kamu, 
+              bukan asal pilih! Bahkan kamu juga bakal dapet ranking posisi yang paling relate buat kamu 🔥
+              <br /><br />
+              Yuk, jangan sampai salah langkah! Temuin magang impianmu sekarang dan gaskeun kariermu dari sini!
             </p>
 
             <div className="flex gap-4 mt-8 mb-8 flex-wrap">
@@ -169,10 +171,13 @@ export default function Home() {
             style={{ background: "linear-gradient(90deg, #6366f1, #8b5cf6)" }}
           >
             <h2 className="text-2xl md:text-3xl font-bold mb-3 leading-tight">
-              Temukan Divisi Magang yang Paling Sesuai<br />dengan Skill Kamu
+            Bingung Mau Magang di Divisi Apa?<br />
+            Cari yang Paling Cocok Buat Kamu di Sini!
             </h2>
+
             <p className="text-indigo-100 text-l max-w-xl mx-auto mb-6">
-              Masukkan skill yang kamu miliki, dan lihat divisi mana yang paling relevan untukmu. Biarkan sistem membantu menemukan posisi yang paling cocok.
+            Tinggal masukin skill yang kamu punya, nanti sistem bakal bantu nunjukin
+            divisi magang yang paling cocok dan relate buat kamu. Gak perlu nebak-nebak lagi 😉
             </p>
             <Link
               href="/register"
