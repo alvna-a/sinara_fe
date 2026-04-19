@@ -25,7 +25,15 @@ interface WishlistItem {
   internCount: number;
 }
 
+interface UserProfile {
+  nama: string;
+}
+
 // ─── Mock Data ────────────────────────────────────────────────────────────────
+
+const mockProfile: UserProfile = {
+  nama: "Arjuna Wiguna",
+};
 
 const riwayatData: RiwayatItem[] = [
   {
@@ -233,6 +241,8 @@ export default function RiwayatPencarian() {
   const [activeTab, setActiveTab] = useState<TabType>("riwayat");
   const [wishlistFilter, setWishlistFilter] = useState<WishlistFilter>("semua");
 
+  const profile = mockProfile;
+
   const filteredWishlist = wishlistData.filter((item) => {
     if (wishlistFilter === "semua") return true;
     if (wishlistFilter === "perusahaan") return item.type === "Perusahaan";
@@ -254,13 +264,14 @@ export default function RiwayatPencarian() {
         <header className="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between sticky top-0 z-10">
           <h1 className="text-xl font-bold text-gray-900">Riwayat Rekomendasi</h1>
           <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-gray-700">Halo, Arjuna</span>
-            <div className="w-9 h-9 rounded-full bg-gray-200 overflow-hidden border-2 border-indigo-100">
-              <img
-                src="https://i.pravatar.cc/40?img=12"
-                alt="Avatar"
-                className="w-full h-full object-cover"
-              />
+            <span className="text-sm font-medium text-gray-700">Halo, {profile.nama.split(" ")[0]}</span>
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center text-sm font-bold text-white border-2 border-indigo-100">
+              {profile.nama
+                .split(" ")
+                .map((n) => n[0])
+                .slice(0, 2)
+                .join("")
+                .toUpperCase()}
             </div>
           </div>
         </header>
@@ -268,19 +279,21 @@ export default function RiwayatPencarian() {
         {/* Content Area */}
         <main className="flex-1 px-8 py-7">
           {/* Tab Switcher */}
-          <div className="flex gap-2 mb-7">
+          <div className="inline-flex items-center gap-2 mb-7 rounded-full bg-white p-1 shadow-sm border border-gray-200">
             <button
               onClick={() => setActiveTab("riwayat")}
               className={`flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
                 activeTab === "riwayat"
-                  ? "bg-indigo-600 text-white shadow-sm shadow-indigo-200"
-                  : "bg-white text-gray-600 border border-gray-200 hover:border-indigo-200 hover:text-indigo-600"
+                  ? "bg-gradient-to-r from-indigo-500 to-cyan-500 text-white shadow-sm shadow-indigo-200"
+                  : "bg-transparent text-gray-500 hover:text-gray-700"
               }`}
             >
               Riwayat
               <span
-                className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${
-                  activeTab === "riwayat" ? "bg-white/20 text-white" : "bg-gray-100 text-gray-500"
+                className={`text-xs px-2 py-1 rounded-full font-bold ${
+                  activeTab === "riwayat"
+                    ? "bg-white/20 text-white"
+                    : "bg-gray-100 text-gray-500"
                 }`}
               >
                 {riwayatCount}
@@ -291,14 +304,16 @@ export default function RiwayatPencarian() {
               onClick={() => setActiveTab("wishlist")}
               className={`flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
                 activeTab === "wishlist"
-                  ? "bg-indigo-600 text-white shadow-sm shadow-indigo-200"
-                  : "bg-white text-gray-600 border border-gray-200 hover:border-indigo-200 hover:text-indigo-600"
+                  ? "bg-gradient-to-r from-indigo-500 to-cyan-500 text-white shadow-sm shadow-indigo-200"
+                  : "bg-transparent text-gray-500 hover:text-gray-700"
               }`}
             >
               Wishlist
               <span
-                className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${
-                  activeTab === "wishlist" ? "bg-white/20 text-white" : "bg-gray-100 text-gray-500"
+                className={`text-xs px-2 py-1 rounded-full font-bold ${
+                  activeTab === "wishlist"
+                    ? "bg-white/20 text-white"
+                    : "bg-gray-100 text-gray-500"
                 }`}
               >
                 {wishlistCount}
