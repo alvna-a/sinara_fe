@@ -1,6 +1,6 @@
 
 "use client";
-import SidebarCalon from "@/components/layout/sidebar_calon";
+import SidebarMahasiswa2 from "@/components/layout/sidebar_calon";
 import { CompanyGridCard, Company } from "@/components/recommendation/CompanyGridCard";
 import { useEffect, useState } from "react";
 
@@ -23,7 +23,7 @@ export default function CalonDashboard() {
 
   return (
     <div className="min-h-screen bg-[#F0F2FA] flex">
-      <SidebarCalon />
+      <SidebarMahasiswa2 />
       <main className="flex-1 ml-60 px-8 py-8">
         {/* Header Welcome */}
         <div className="flex flex-col md:flex-row gap-6 mb-8">
@@ -118,9 +118,7 @@ export default function CalonDashboard() {
           </div>
         </div>
 
-        <footer className="text-center text-xs text-gray-400 py-6 border-t border-gray-100 mt-8">
-          © 2026 Sinara. POLINES. TA 2026.
-        </footer>
+        
       </main>
     </div>
   );
