@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Pencil, Eye, EyeOff, Camera, ArrowLeft, Upload, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Eye, EyeOff, Camera, ArrowLeft, Upload, X } from "lucide-react";
 import SidebarCalon from "@/components/layout/sidebar_calon";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -19,6 +20,8 @@ interface UserProfile {
   kelengkapan_profil: number;
 }
 
+const STORAGE_KEY = "sinara-profile";
+
 const mockProfile: UserProfile = {
   nim: "3.34.22.1.01",
   nama: "Arjuna Wiguna",
@@ -32,6 +35,16 @@ const mockProfile: UserProfile = {
   status_magang: "Belum Magang",
   kelengkapan_profil: 80,
 };
+
+function getSavedProfile(): UserProfile {
+  if (typeof window === "undefined") return mockProfile;
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored ? (JSON.parse(stored) as UserProfile) : mockProfile;
+  } catch {
+    return mockProfile;
+  }
+}
 
 const statusConfig: Record<
   UserProfile["status_magang"],
@@ -308,24 +321,24 @@ function EditProfileView({ profile, onBack, onSave }: {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function ProfilCalonPage() {
-  const [profile, setProfile] = useState<UserProfile>(mockProfile);
-  const [isEditing, setIsEditing] = useState(false);
-
-  const status = statusConfig[profile.status_magang];
+  const [profile, setProfile] = useState<UserProfile>(getSavedProfile());
+  const router = useRouter();
 
   const handleSave = (updated: Partial<UserProfile> & { photoFile?: File | null }) => {
     const { photoFile, ...rest } = updated;
-    setProfile((prev) => ({ ...prev, ...rest }));
-    setIsEditing(false);
+    const updatedProfile = { ...profile, ...rest };
+    setProfile(updatedProfile);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedProfile));
+    router.push("/profil_calon");
   };
 
   return (
     <div className="flex min-h-screen bg-[#EEF0F8]">
       <SidebarCalon />
 
-      <main className="ml-60 flex-1 flex flex-col min-h-screen">
+      <main className="md:ml-60 flex-1 flex flex-col min-h-screen">
         {/* Top Bar */}
-        <header className="bg-white border-b border-gray-100 px-8 py-3.5 flex items-center justify-between sticky top-0 z-10 shadow-sm">
+        <header className="bg-white border-b border-gray-100 px-8 py-3.5 flex items-center justify-between sticky top-0 z-10 shadow-sm pt-16 md:pt-3.5">
           <h1 className="text-lg font-bold text-gray-900">Profil Mahasiswa</h1>
           <div className="flex items-center gap-3">
             <span className="text-sm text-gray-600">
@@ -337,49 +350,8 @@ export default function ProfilCalonPage() {
 
         {/* Body */}
        <div className="flex-1 px-6 py-6 flex flex-col gap-4 max-w-5xl w-full mx-auto">
-          {isEditing ? (
-            <EditProfileView profile={profile} onBack={() => setIsEditing(false)} onSave={handleSave} />
-          ) : (
-            <>
-              {/* Profile Card */}
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 px-6 py-5">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-4">
-                    <Avatar photo={profile.photo} nama={profile.nama} size="md" />
-                    <div className="flex flex-col gap-1.5">
-                      <h2 className="text-xl font-extrabold text-gray-900 leading-tight">{profile.nama}</h2>
-                      <p className="text-sm text-gray-500">{profile.program_studi} &nbsp;|&nbsp; Semester {profile.semester}</p>
-                      <span className={status.className}>{status.label}</span>
-                    </div>
-                  </div>
-                  <button onClick={() => setIsEditing(true)}
-                    className="flex items-center gap-2 border border-gray-200 rounded-xl px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-600 transition-all duration-200 shadow-sm shrink-0">
-                    <Pencil size={14} /> Edit Profile
-                  </button>
-                </div>
-              </div>
-
-              {/* Completion Bar */}
-              <ProfileCompletionBar value={profile.kelengkapan_profil} />
-
-              {/* Detail Info */}
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 px-6 py-5">
-                <div className="grid grid-cols-2 gap-x-8 gap-y-4">
-                  <InfoRow label="NIM Mahasiswa" value={profile.nim} />
-                  <InfoRow label="Email" value={profile.email} />
-                  <InfoRow label="Kelas" value={profile.kelas} />
-                  <InfoRow label="No Hp" value={profile.phone} />
-                  <InfoRow label="Tahun Angkatan" value={String(profile.tahun_angkatan)} />
-                </div>
-              </div>
-            </>
-          )}
+          <EditProfileView profile={profile} onBack={() => router.push("/profil_calon")} onSave={handleSave} />
         </div>
-
-        {/* Footer */}
-        <footer className="py-3 text-center text-xs text-gray-400 border-t border-gray-100 bg-white">
-          © 2026 Sinara. POLINES, TA 2026.
-        </footer>
       </main>
     </div>
   );

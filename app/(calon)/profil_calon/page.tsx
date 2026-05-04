@@ -20,6 +20,8 @@ interface UserProfile {
   kelengkapan_profil: number; // 0–100
 }
 
+const STORAGE_KEY = "sinara-profile";
+
 // ─── Mock data (replace with your API fetch) ──────────────────────────────────
 const mockProfile: UserProfile = {
   nim: "3.34.22.1.01",
@@ -34,6 +36,16 @@ const mockProfile: UserProfile = {
   status_magang: "Belum Magang",
   kelengkapan_profil: 80,
 };
+
+function getSavedProfile(): UserProfile {
+  if (typeof window === "undefined") return mockProfile;
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored ? (JSON.parse(stored) as UserProfile) : mockProfile;
+  } catch {
+    return mockProfile;
+  }
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const statusConfig: Record<
@@ -112,7 +124,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function ProfilCalonPage() {
-  const [profile] = useState<UserProfile>(mockProfile);
+  const [profile] = useState<UserProfile>(getSavedProfile());
 
   const status = statusConfig[profile.status_magang];
 
@@ -122,9 +134,9 @@ export default function ProfilCalonPage() {
       <SidebarCalon />
 
       {/* Main Content */}
-      <main className="ml-60 flex-1 flex flex-col min-h-screen">
+      <main className="md:ml-60 flex-1 flex flex-col min-h-screen">
         {/* Top Bar */}
-        <header className="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between sticky top-0 z-10">
+        <header className="bg-white border-b border-gray-200 px-4 sm:px-8 py-4 flex items-center justify-between sticky top-0 z-10 pt-16 md:pt-4">
           <h1 className="text-xl font-bold text-gray-900">Profil Mahasiswa</h1>
           <div className="flex items-center gap-3">
             <span className="text-sm font-medium text-gray-700">Halo, {profile.nama.split(" ")[0]}</span>
