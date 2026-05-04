@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { apiPost } from "@/services/api";
+import { TOKEN_KEY, ROLE_REDIRECT } from "@/app/constants/auth";
 
 type UserRole = "alumni" | "calon" | "admin";
 
@@ -50,29 +51,29 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
+  e.preventDefault();
+  setLoading(true);
+  setError(null);
 
-    try {
-      const res = await apiPost("/login", { nim, password, role: selectedRole });
+  try {
+    const res = await apiPost("/login", { nim, password, role: selectedRole });
 
-      if (res.access_token) {
-        localStorage.setItem("token", res.access_token);
-        localStorage.setItem("user", JSON.stringify(res.user));
+    if (res.access_token) {
+      // ✅ FIX TOKEN (INI YANG KRITIS)
+      localStorage.setItem(TOKEN_KEY, res.access_token);
+      localStorage.setItem("user", JSON.stringify(res.user));
 
-      if (selectedRole === "admin") router.push("/dashboard_admin");
-      else if (selectedRole === "alumni") router.push("/dashboard_alumni");
-      else router.push("/dashboard_calon");
-      } else {
-        setError(res.message || "Login gagal. Periksa NIM dan password.");
-      }
-    } catch {
-      setError("Tidak dapat terhubung ke server.");
-    } finally {
-      setLoading(false);
+      // ✅ FIX ROUTING (GAK HARDCODE LAGI)
+      router.push(ROLE_REDIRECT[selectedRole]);
+    } else {
+      setError(res.message || "Login gagal. Periksa NIM dan password.");
     }
-  };
+  } catch {
+    setError("Tidak dapat terhubung ke server.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4 py-10">
