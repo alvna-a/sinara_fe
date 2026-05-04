@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { apiPost } from "@/services/api";
+import { TOKEN_KEY, ROLE_REDIRECT } from "@/app/constants/auth";
 
 type Role = "calon" | "alumni";
 type Step = 1 | 2;
@@ -61,9 +62,12 @@ export default function RegisterPage() {
       });
 
       if (res.access_token) {
-        localStorage.setItem("token", res.access_token);
+        // ✅ FIX TOKEN
+        localStorage.setItem(TOKEN_KEY, res.access_token);
         localStorage.setItem("user", JSON.stringify(res.user));
-        router.push(role === "calon" ? "/calon/dashboard" : "/alumni/dashboard");
+
+        // ✅ FIX ROUTE (NO HARDCODE NGACO)
+        router.push(ROLE_REDIRECT[role]);
       } else {
         setError(res.message || "Registrasi gagal. Silakan coba lagi.");
       }
@@ -75,7 +79,7 @@ export default function RegisterPage() {
   };
 
   const handleSkip = () => {
-    router.push(role === "calon" ? "/calon/dashboard" : "/alumni/dashboard");
+    router.push(ROLE_REDIRECT[role]);
   };
 
   return (
