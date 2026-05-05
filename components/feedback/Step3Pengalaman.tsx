@@ -119,7 +119,7 @@ export default function Step3Pengalaman({ data, onChange, onNext, onBack }: Step
             onChange={(e) => onChange({ ...data, ringkasan: e.target.value })}
             placeholder="Contoh: Selama magang, saya membantu pembuatan konten, mengelola media sosial, dan menyusun caption menggunakan tools seperti Canva dan Google Docs. Saya bekerja secara kolaboratif dengan tim melalui diskusi dan evaluasi rutin."
             rows={6}
-            className="w-full px-4 py-3 text-sm focus:outline-none resize-none"
+            className="w-full px-4 py-3 text-sm text-gray-900 focus:outline-none resize-none placeholder-gray-400 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-400 transition"
           />
         </div>
         <div className="flex items-center justify-between mt-1">
@@ -171,7 +171,7 @@ export default function Step3Pengalaman({ data, onChange, onNext, onBack }: Step
                     onKeyDown={(e) => e.key === "Enter" && addCustomJobdesk()}
                     placeholder="Ketik jobdesk..."
                     autoFocus
-                    className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-400 mb-2"
+                    className="w-full px-2 py-1.5 text-xs text-gray-900 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-400 placeholder-gray-400 mb-2"
                   />
                   <div className="max-h-40 overflow-y-auto space-y-0.5">
                     {filtered.slice(0, 8).map((j) => (

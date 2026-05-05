@@ -128,7 +128,7 @@ export default function Step2Skill({ data, onChange, onNext, onBack }: Step2Prop
                     onKeyDown={(e) => e.key === "Enter" && addCustomSkill()}
                     placeholder="Ketik skill..."
                     autoFocus
-                    className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-400 mb-2"
+                    className="w-full px-2 py-1.5 text-xs text-gray-900 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-400 placeholder-gray-400 mb-2"
                   />
                   <div className="max-h-40 overflow-y-auto space-y-0.5">
                     {loadingSkills && (
@@ -195,7 +195,7 @@ export default function Step2Skill({ data, onChange, onNext, onBack }: Step2Prop
           onChange={(e) => onChange({ ...data, alasanKesesuaian: e.target.value })}
           placeholder="Tuliskan alasan Anda memberikan penilaian ini... (minimal 20 karakter)"
           rows={4}
-          className={`w-full px-4 py-3 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 transition resize-none ${
+          className={`w-full px-4 py-3 rounded-lg border text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition resize-none placeholder-gray-400 ${
             errors.alasan ? "border-red-500" : "border-gray-200"
           }`}
         />

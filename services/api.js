@@ -1,7 +1,23 @@
 const BASE_URL = 'http://localhost:8000/api';
 
-export async function apiPost(endpoint, data, token = null) {
-  const headers = { 'Content-Type': 'application/json' };
+async function handleResponse(res) {
+  // Kalau response bukan JSON (misal HTML error page), tangkap dengan baik
+  const contentType = res.headers.get('content-type');
+  if (!contentType || !contentType.includes('application/json')) {
+    throw new Error(`Server error ${res.status}: response bukan JSON`);
+  }
+  const data = await res.json();
+  if (!res.ok) {
+    throw data; // lempar error object dari Laravel (berisi errors, message, dll)
+  }
+  return data;
+}
+
+export async function apiPost(endpoint, data, token) {
+  const headers = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json', // ← penting agar Laravel selalu return JSON
+  };
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
   const res = await fetch(`${BASE_URL}${endpoint}`, {
@@ -9,18 +25,19 @@ export async function apiPost(endpoint, data, token = null) {
     headers,
     body: JSON.stringify(data),
   });
-
-  return res.json();
+  return handleResponse(res);
 }
 
-export async function apiGet(endpoint, token = null) {
-  const headers = { 'Content-Type': 'application/json' };
+export async function apiGet(endpoint, token) {
+  const headers = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json', // ← sama
+  };
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
   const res = await fetch(`${BASE_URL}${endpoint}`, {
     method: 'GET',
     headers,
   });
-
-  return res.json();
+  return handleResponse(res);
 }

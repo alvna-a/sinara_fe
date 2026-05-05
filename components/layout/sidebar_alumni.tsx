@@ -11,20 +11,20 @@ import {
 } from "lucide-react";
 
 const sidebarLinks = [
-  { label: "Dashboard", href: "/mahasiswa1/dashboard", icon: LayoutDashboard },
-  { label: "Riwayat Feedback", href: "/mahasiswa1/riwayat-feedback", icon: ClipboardList },
-  { label: "Input Feedback", href: "/mahasiswa1/input-feedback", icon: PlusCircle },
-  { label: "Profil", href: "/mahasiswa1/profil", icon: User },
+  { label: "Dashboard", href: "/dashboard_alumni", icon: LayoutDashboard },
+  { label: "Riwayat Feedback", href: "/riwayat_feedback", icon: ClipboardList },
+  { label: "Input Feedback", href: "/input_feedback", icon: PlusCircle },
+  { label: "Profil", href: "/profil_alumni", icon: User },
 ];
 
-export default function SidebarMahasiswa1() {
+export default function SidebarAlumni() {
   const pathname = usePathname();
 
   return (
     <aside className="h-screen w-60 bg-white border-r border-gray-100 flex flex-col fixed left-0 top-0 z-40">
       {/* Logo */}
       <div className="px-5 h-16 flex items-center border-b border-gray-100">
-        <Link href="/mahasiswa1/dashboard" className="flex items-center gap-2 font-bold text-xl text-blue-600">
+        <Link href="/dashboard_alumni" className="flex items-center gap-2 font-bold text-xl text-blue-600">
           <img src="/logo.png" alt="Sinara" className="h-8 w-8 object-contain" />
           <span>Sinara</span>
         </Link>

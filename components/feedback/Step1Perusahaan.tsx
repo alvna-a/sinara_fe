@@ -105,7 +105,7 @@ export default function Step1Perusahaan({ data, onChange, onNext }: Step1Props) 
           value={data.namaPerusahaan}
           onChange={(e) => onChange({ ...data, namaPerusahaan: e.target.value })}
           placeholder="Contoh: Tokopedia"
-          className={`w-full px-4 py-3 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 transition ${
+          className={`w-full px-4 py-3 rounded-lg border text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition placeholder-gray-400 ${
             errors.namaPerusahaan ? "border-red-500" : "border-gray-200"
           }`}
         />
@@ -126,7 +126,7 @@ export default function Step1Perusahaan({ data, onChange, onNext }: Step1Props) 
             onChange={(e) => handleDivisiInput(e.target.value)}
             onFocus={() => setShowDivisiDropdown(true)}
             placeholder="Contoh: Product Design Intern"
-            className={`w-full px-4 py-3 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 transition pr-24 ${
+            className={`w-full px-4 py-3 rounded-lg border text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition pr-24 placeholder-gray-400 ${
               errors.divisi ? "border-red-500" : "border-gray-200"
             }`}
           />
@@ -175,7 +175,7 @@ export default function Step1Perusahaan({ data, onChange, onNext }: Step1Props) 
           value={data.lokasi}
           onChange={(e) => onChange({ ...data, lokasi: e.target.value })}
           placeholder="Contoh: Jakarta Selatan"
-          className={`w-full px-4 py-3 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 transition ${
+          className={`w-full px-4 py-3 rounded-lg border text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition placeholder-gray-400 ${
             errors.lokasi ? "border-red-500" : "border-gray-200"
           }`}
         />
