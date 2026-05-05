@@ -29,6 +29,18 @@ interface UserProfile {
   nama: string;
 }
 
+const STORAGE_KEY = "sinara-profile";
+
+function getSavedProfile(): UserProfile {
+  if (typeof window === "undefined") return { nama: "Arjuna Wiguna" };
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored ? (JSON.parse(stored) as UserProfile) : { nama: "Arjuna Wiguna" };
+  } catch {
+    return { nama: "Arjuna Wiguna" };
+  }
+}
+
 // ─── Mock Data ────────────────────────────────────────────────────────────────
 
 const mockProfile: UserProfile = {
@@ -142,7 +154,7 @@ function WishlistCard({ item }: { item: WishlistItem }) {
   const isPerusahaan = item.type === "Perusahaan";
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col gap-3 hover:shadow-md transition-shadow duration-200">
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col gap-3 hover:shadow-md transition-shadow duration-200 min-w-[18rem] sm:min-w-full snap-start">
       {/* Header */}
       <div className="flex items-center justify-between">
         <span
@@ -190,8 +202,8 @@ function WishlistCard({ item }: { item: WishlistItem }) {
 
 function RiwayatCard({ item }: { item: RiwayatItem }) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 py-5 flex items-center justify-between hover:shadow-md transition-shadow duration-200">
-      <div className="flex items-center gap-4">
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:shadow-md transition-shadow duration-200 min-w-[19rem] sm:min-w-full snap-start">
+      <div className="flex-1 flex items-start sm:items-center gap-4 w-full">
         {/* Icon */}
         <div className="w-11 h-11 rounded-xl bg-indigo-50 flex items-center justify-center flex-shrink-0">
           <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -200,7 +212,7 @@ function RiwayatCard({ item }: { item: RiwayatItem }) {
         </div>
 
         {/* Text */}
-        <div>
+        <div className="min-w-0">
           <h3 className="font-bold text-gray-900 text-base">{item.title}</h3>
           <div className="flex items-center gap-1.5 mt-1 text-sm text-gray-500">
             <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -228,7 +240,7 @@ function RiwayatCard({ item }: { item: RiwayatItem }) {
         </div>
       </div>
 
-      <button className="ml-6 flex-shrink-0 border border-gray-200 text-gray-700 font-semibold text-sm px-4 py-2 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-colors duration-150 whitespace-nowrap">
+      <button className="w-full sm:w-auto border border-gray-200 text-gray-700 font-semibold text-sm px-4 py-2 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-colors duration-150 whitespace-nowrap">
         Lihat Detail Rekomendasi
       </button>
     </div>
@@ -241,7 +253,7 @@ export default function RiwayatPencarian() {
   const [activeTab, setActiveTab] = useState<TabType>("riwayat");
   const [wishlistFilter, setWishlistFilter] = useState<WishlistFilter>("semua");
 
-  const profile = mockProfile;
+  const [profile] = useState<UserProfile>(getSavedProfile());
 
   const filteredWishlist = wishlistData.filter((item) => {
     if (wishlistFilter === "semua") return true;
@@ -258,12 +270,12 @@ export default function RiwayatPencarian() {
       {/* Sidebar */}
       <SidebarCalon />
 
-      {/* Main Content — offset by sidebar width (w-60 = 240px) */}
-      <div className="flex-1 flex flex-col min-h-screen ml-60">
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col min-h-screen md:ml-60">
         {/* Top Bar */}
-        <header className="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between sticky top-0 z-10">
+        <header className="bg-white border-b border-gray-200 px-4 sm:px-8 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sticky top-0 z-10 pt-16 md:pt-4">
           <h1 className="text-xl font-bold text-gray-900">Riwayat Rekomendasi</h1>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
             <span className="text-sm font-medium text-gray-700">Halo, {profile.nama.split(" ")[0]}</span>
             <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center text-sm font-bold text-white border-2 border-indigo-100">
               {profile.nama
@@ -277,12 +289,12 @@ export default function RiwayatPencarian() {
         </header>
 
         {/* Content Area */}
-        <main className="flex-1 px-8 py-7">
+        <main className="flex-1 px-4 sm:px-8 py-7">
           {/* Tab Switcher */}
-          <div className="inline-flex items-center gap-2 mb-7 rounded-full bg-white p-1 shadow-sm border border-gray-200">
+          <div className="inline-flex flex-nowrap overflow-x-auto items-center gap-2 mb-7 rounded-full bg-white p-1 shadow-sm border border-gray-200">
             <button
               onClick={() => setActiveTab("riwayat")}
-              className={`flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
+              className={`min-w-[10rem] flex-shrink-0 flex items-center justify-center gap-2 px-5 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
                 activeTab === "riwayat"
                   ? "bg-gradient-to-r from-indigo-500 to-cyan-500 text-white shadow-sm shadow-indigo-200"
                   : "bg-transparent text-gray-500 hover:text-gray-700"
@@ -302,7 +314,7 @@ export default function RiwayatPencarian() {
 
             <button
               onClick={() => setActiveTab("wishlist")}
-              className={`flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
+              className={`min-w-[10rem] flex-shrink-0 flex items-center justify-center gap-2 px-5 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
                 activeTab === "wishlist"
                   ? "bg-gradient-to-r from-indigo-500 to-cyan-500 text-white shadow-sm shadow-indigo-200"
                   : "bg-transparent text-gray-500 hover:text-gray-700"
@@ -330,7 +342,7 @@ export default function RiwayatPencarian() {
                   Daftar hasil rekomendasi divisi magang yang pernah di-generate oleh AI untuk profilmu.
                 </p>
               </div>
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-row gap-4 overflow-x-auto pb-4 snap-x snap-mandatory sm:flex-col sm:overflow-visible">
                 {riwayatData.map((item) => (
                   <RiwayatCard key={item.id} item={item} />
                 ))}
@@ -349,7 +361,7 @@ export default function RiwayatPencarian() {
               </div>
 
               {/* Filter Pills */}
-              <div className="flex gap-2 mb-6">
+              <div className="flex flex-wrap gap-2 mb-6">
                 {(["semua", "perusahaan", "divisi"] as WishlistFilter[]).map((filter) => (
                   <button
                     key={filter}
@@ -366,7 +378,7 @@ export default function RiwayatPencarian() {
               </div>
 
               {/* Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="flex flex-row gap-4 overflow-x-auto pb-4 snap-x snap-mandatory sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:overflow-visible">
                 {filteredWishlist.map((item) => (
                   <WishlistCard key={item.id} item={item} />
                 ))}
@@ -375,10 +387,7 @@ export default function RiwayatPencarian() {
           )}
         </main>
 
-        {/* Footer */}
-        <footer className="border-t border-gray-200 bg-white py-4 text-center text-sm text-gray-400">
-          © 2026 Sinara. POLINES, TA 2026.
-        </footer>
+        
       </div>
     </div>
   );
