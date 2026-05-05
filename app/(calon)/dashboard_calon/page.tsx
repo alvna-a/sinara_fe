@@ -1,6 +1,6 @@
 
 "use client";
-import SidebarMahasiswa2 from "@/components/layout/sidebar_calon";
+import SidebarCalon from "@/components/layout/sidebar_calon";
 import { CompanyGridCard, Company } from "@/components/recommendation/CompanyGridCard";
 import { useEffect, useState } from "react";
 
@@ -66,7 +66,7 @@ export default function CalonDashboard() {
 
   return (
     <div className="min-h-screen bg-[#F0F2FA] flex">
-      <SidebarMahasiswa2 />
+      <SidebarCalon />
       <main className="flex-1 md:ml-60 px-4 sm:px-6 lg:px-8 pt-16 md:pt-4 sm:py-6 lg:py-8">
         {/* Header Welcome */}
         <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 mb-6 lg:mb-8">

@@ -7,19 +7,19 @@ import { ChevronDown, User, LogOut, Settings } from "lucide-react";
 interface DashboardNavbarProps {
   pageTitle: string;
   userName?: string;
-  userRole?: "mahasiswa1" | "mahasiswa2" | "admin";
+  userRole?: "alumni" | "calon" | "admin";
 }
 
 const profileHref: Record<string, string> = {
-  mahasiswa1: "/mahasiswa1/profil",
-  mahasiswa2: "/mahasiswa2/profil",
+  alumni: "/profil",
+  calon: "/profil_calon",
   admin: "/admin/profil",
 };
 
 export default function DashboardNavbar({
   pageTitle,
   userName = "Pengguna",
-  userRole = "mahasiswa2",
+  userRole = "alumni",
 }: DashboardNavbarProps) {
   const [open, setOpen] = useState(false);
 
