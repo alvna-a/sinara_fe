@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { apiGet } from "@/services/api";
 
 export interface Step2Data {
   skills: string[];
@@ -32,26 +33,19 @@ export default function Step2Skill({ data, onChange, onNext, onBack }: Step2Prop
 
   // Fetch semua skill dari BE — GET /api/skills
   useEffect(() => {
-    const fetchSkills = async () => {
-      setLoadingSkills(true);
-      try {
-        const token = localStorage.getItem("access_token");
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/skills`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        });
-        const json = await res.json();
-        // Response: { message, data: [{id, name}] }
-        setAllSkills((json.data || []).map((s: { id: number; name: string }) => s.name));
-      } catch (err) {
-        console.error("Gagal fetch skills:", err);
-      } finally {
-        setLoadingSkills(false);
-      }
-    };
-    fetchSkills();
+      const fetchSkills = async () => {
+        setLoadingSkills(true);
+        try {
+          const token = localStorage.getItem("access_token");
+          const json = await apiGet("/skills", token);
+          setAllSkills((json.data || []).map((s: { id: number; name: string }) => s.name));
+        } catch (err) {
+          console.error("Gagal fetch skills:", err);
+        } finally {
+          setLoadingSkills(false);
+        }
+      };
+      fetchSkills();
   }, []);
 
   const toggleSkill = (skill: string) => {

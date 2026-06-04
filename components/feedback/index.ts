@@ -1,5 +1,6 @@
 export { default as Step1Perusahaan } from "./Step1Perusahaan";
 export type { Step1Data } from "./Step1Perusahaan";
+export { DURASI_MAP } from "./Step1Perusahaan";
 
 export { default as Step2Skill } from "./Step2Skill";
 export type { Step2Data } from "./Step2Skill";

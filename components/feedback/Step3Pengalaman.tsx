@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { apiGet } from "@/services/api";
+
 
 export interface Step3Data {
   ringkasan: string;  // → field 'experience' di BE (required, min 20 char)
@@ -37,23 +39,19 @@ export default function Step3Pengalaman({ data, onChange, onNext, onBack }: Step
 
   // Opsional: ambil nama divisi dari BE sebagai saran jobdesk
   useEffect(() => {
-    const fetchDivisionNames = async () => {
-      try {
-        const token = localStorage.getItem("access_token");
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/divisions`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const json = await res.json();
-        if (json.data && json.data.length > 0) {
-          const divisionNames: string[] = json.data.map((d: { name: string }) => d.name);
-          // Gabungkan dengan suggestions statis, hindari duplikat
-          const combined = Array.from(new Set([...divisionNames, ...JOBDESK_STATIC]));
-          setJobdeskSuggestions(combined);
+      const fetchDivisionNames = async () => {
+        try {
+          const token = localStorage.getItem("access_token");
+          const json = await apiGet("/divisions", token);
+          if (json.data && json.data.length > 0) {
+            const divisionNames: string[] = json.data.map((d: { name: string }) => d.name);
+            const combined = Array.from(new Set([...divisionNames, ...JOBDESK_STATIC]));
+            setJobdeskSuggestions(combined);
+          }
+        } catch {
+          // fallback ke statis
         }
-      } catch {
-        // Kalau gagal, pakai fallback statis
-      }
-    };
+      };
     fetchDivisionNames();
   }, []);
 
