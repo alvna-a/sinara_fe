@@ -6,7 +6,7 @@ import DashboardNavbar from "@/components/layout/dashboard_navbar";
 import MiniFooter from "@/components/layout/mini_footer";
 import { apiPost } from "@/services/api";
 import {
-  Step1Perusahaan, Step1Data,
+  Step1Perusahaan, Step1Data, DURASI_MAP as DURASI_MAP_BE,  // ← import ini
   Step2Skill, Step2Data,
   Step3Pengalaman, Step3Data,
   Step4Review,
@@ -34,12 +34,6 @@ const INITIAL_STEP3: Step3Data = {
   jobdesk: [],
 };
 
-// Mapping durasi display → value BE
-const DURASI_MAP: Record<string, string> = {
-  "<3": "<3",
-  "3-5": "3-5",
-  ">5": ">5",
-};
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -63,7 +57,7 @@ export default function InputFeedbackPage() {
         company_name:  step1Data.namaPerusahaan,
         division_name: step1Data.divisi,
         location:      step1Data.lokasi,
-        duration:      DURASI_MAP[step1Data.durasi],
+        duration:      DURASI_MAP_BE[step1Data.durasi], 
         skills_used:   step2Data.skills,
         suitability:   step2Data.tingkatKesesuaian,
         rating_reason: step2Data.alasanKesesuaian,

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { apiGet } from "@/services/api";
 
 export interface Step1Data {
   namaPerusahaan: string;
@@ -38,26 +39,20 @@ export default function Step1Perusahaan({ data, onChange, onNext }: Step1Props) 
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const fetchDivisions = async (search: string) => {
-    setLoadingDivisi(true);
-    try {
-      const token = localStorage.getItem("access_token");
-      const params = search ? `?search=${encodeURIComponent(search)}` : "";
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/divisions${params}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-      const json = await res.json();
-      setDivisiOptions(json.data || []);
-    } catch (err) {
-      console.error("Gagal fetch divisions:", err);
-      setDivisiOptions([]);
-    } finally {
-      setLoadingDivisi(false);
-    }
-  };
+    const fetchDivisions = async (search: string) => {
+      setLoadingDivisi(true);
+      try {
+        const token = localStorage.getItem("access_token");
+        const params = search ? `?search=${encodeURIComponent(search)}` : "";
+        const json = await apiGet(`/divisions${params}`, token);
+        setDivisiOptions(json.data || []);
+      } catch (err) {
+        console.error("Gagal fetch divisions:", err);
+        setDivisiOptions([]);
+      } finally {
+        setLoadingDivisi(false);
+      }
+    };
 
   // Fetch divisions on mount untuk suggestions awal
   useEffect(() => {
