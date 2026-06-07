@@ -17,8 +17,8 @@ import {
 const sidebarLinks = [
   { label: "Dashboard", href: "/dashboard_admin", icon: LayoutDashboard },
   { label: "Review Feedback", href: "/review_feedback", icon: ClipboardCheck },
-  { label: "Kelola Perusahaan", href: "/perusahaan", icon: Building2 },
-  { label: "Data Mahasiswa", href: "/mahasiswa", icon: Users },
+  { label: "Kelola Perusahaan", href: "/kelola_perusahaan", icon: Building2 },
+  { label: "Data Mahasiswa", href: "/data_mahasiswa", icon: Users },
   { label: "Profil", href: "/profil_admin",  icon: User },
 ];
 
