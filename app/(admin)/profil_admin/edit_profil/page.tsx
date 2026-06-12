@@ -17,15 +17,6 @@ interface FormData {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
-function getInitials(nama: string) {
-  return nama
-    .split(" ")
-    .map((n) => n[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
-}
-
 function Avatar({ photo, nama }: { photo: string | null; nama: string }) {
   if (photo) {
     return (
@@ -36,9 +27,15 @@ function Avatar({ photo, nama }: { photo: string | null; nama: string }) {
       />
     );
   }
+  const initials = nama
+    .split(" ")
+    .map((n) => n[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
   return (
     <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center ring-4 ring-blue-100">
-      <span className="text-white text-3xl font-bold">{getInitials(nama)}</span>
+      <span className="text-white text-3xl font-bold">{initials}</span>
     </div>
   );
 }
@@ -105,7 +102,7 @@ export default function EditProfilAdminPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  // ─── Handler ───────────────────────────────────────────────────────────────
+  // ─── Handlers ─────────────────────────────────────────────────────────────
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -157,31 +154,45 @@ export default function EditProfilAdminPage() {
     setErrorMessage("");
 
     try {
-      // Pakai FormData karena ada kemungkinan upload foto
+      // 1. Update nama & email → PUT /api/account
+      const resAccount = await fetch(`${API_URL}/api/account`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: formData.nama,
+          email: formData.email,
+        }),
+      });
+
+      if (!resAccount.ok) {
+        const errJson = await resAccount.json().catch(() => ({}));
+        throw new Error(errJson?.message ?? "Gagal memperbarui nama/email");
+      }
+
+      // 2. Update phone & foto → POST /api/profile (FormData)
       const body = new FormData();
       body.append("phone", formData.phone);
-
-      // BE ProfileController hanya terima: nim, program_studi, semester, phone, photo
-      // nama & email diupdate via endpoint terpisah jika ada, atau skip dulu
       if (formData.photoFile) {
         body.append("photo", formData.photoFile);
       }
 
-      const res = await fetch(`${API_URL}/api/profile`, {
+      const resProfile = await fetch(`${API_URL}/api/profile`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
-          // jangan set Content-Type manual kalau pakai FormData
         },
         body,
       });
 
-      if (!res.ok) {
-        const errJson = await res.json().catch(() => ({}));
-        throw new Error(errJson?.message ?? "Gagal menyimpan profil");
+      if (!resProfile.ok) {
+        const errJson = await resProfile.json().catch(() => ({}));
+        throw new Error(errJson?.message ?? "Gagal memperbarui profil");
       }
 
-      // Kasih tahu halaman profil untuk re-fetch
+      // 3. Kasih tahu halaman profil untuk re-fetch
       window.dispatchEvent(new Event("sinaraProfileUpdated"));
 
       setSuccessMessage("Profil berhasil diperbarui!");
@@ -198,11 +209,7 @@ export default function EditProfilAdminPage() {
     }
   };
 
-  const handleCancel = () => {
-    router.push("/profil_admin");
-  };
-
-  // ─── Render ────────────────────────────────────────────────────────────────
+  // ─── Loading skeleton ──────────────────────────────────────────────────────
   if (loading) {
     return (
       <div className="flex min-h-screen bg-[#EEF0F8]">
@@ -240,7 +247,7 @@ export default function EditProfilAdminPage() {
           </div>
         </header>
 
-        <div className="flex-1 px-4 sm:px-6 md:px-8 py-5 sm:py-7 flex flex-col gap-4 sm:gap-5 w-full max-w-4xl">
+        <div className="flex-1 px-4 sm:px-6 md:px-8 py-5 sm:py-7 flex flex-col gap-4 sm:gap-5 w-full max-w-7xl mx-auto">
           {/* Success */}
           {successMessage && (
             <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3 sm:p-4 flex items-center justify-between">
@@ -306,36 +313,34 @@ export default function EditProfilAdminPage() {
               Informasi Pribadi
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
-              {/* Nama — read only, nama dikelola BE via /me */}
+              {/* Nama */}
               <div className="flex flex-col gap-2">
                 <label className="text-xs sm:text-sm font-semibold text-gray-700">
-                  Nama Lengkap
+                  Nama Lengkap *
                 </label>
                 <input
                   type="text"
+                  name="nama"
                   value={formData.nama}
-                  disabled
-                  className="px-3 sm:px-4 py-2 border border-gray-200 rounded-xl text-xs sm:text-sm text-gray-500 bg-gray-50 cursor-not-allowed"
+                  onChange={handleInputChange}
+                  className="px-3 sm:px-4 py-2 border border-gray-200 rounded-xl text-xs sm:text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
+                  placeholder="Masukkan nama lengkap"
                 />
-                <p className="text-xs text-gray-400">
-                  Nama dikelola oleh sistem
-                </p>
               </div>
 
-              {/* Email — read only */}
+              {/* Email */}
               <div className="flex flex-col gap-2">
                 <label className="text-xs sm:text-sm font-semibold text-gray-700">
-                  Email
+                  Email *
                 </label>
                 <input
                   type="email"
+                  name="email"
                   value={formData.email}
-                  disabled
-                  className="px-3 sm:px-4 py-2 border border-gray-200 rounded-xl text-xs sm:text-sm text-gray-500 bg-gray-50 cursor-not-allowed"
+                  onChange={handleInputChange}
+                  className="px-3 sm:px-4 py-2 border border-gray-200 rounded-xl text-xs sm:text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
+                  placeholder="Masukkan email"
                 />
-                <p className="text-xs text-gray-400">
-                  Email dikelola oleh sistem
-                </p>
               </div>
 
               {/* Phone */}
@@ -358,7 +363,7 @@ export default function EditProfilAdminPage() {
           {/* Tombol aksi */}
           <div className="flex flex-col sm:flex-row gap-3 justify-end">
             <button
-              onClick={handleCancel}
+              onClick={() => router.push("/profil_admin")}
               disabled={isSaving}
               className="px-4 sm:px-6 py-2 border border-gray-200 rounded-xl text-xs sm:text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-all disabled:opacity-50 order-2 sm:order-1"
             >
