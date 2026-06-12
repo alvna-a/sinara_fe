@@ -26,10 +26,10 @@ function StarRating({ rating }: { rating: number }) {
 function CompanyLogo({ company }: { company: Company }) {
   const dim = "w-14 h-14 text-sm";
   if (company.logo_url) {
-    return <img src={company.logo_url} alt={company.name} className={`${dim} rounded-xl object-contain bg-gray-50 border border-gray-100 flex-shrink-0`} />;
+    return <img src={company.logo_url} alt={company.name} className={`${dim} rounded-xl object-contain bg-gray-50 border border-gray-100 shrink-0`} />;
   }
   return (
-    <div className={`${dim} rounded-xl bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center flex-shrink-0`}>
+    <div className={`${dim} rounded-xl bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center shrink-0`}>
       {company.name.slice(0, 5)}
     </div>
   );

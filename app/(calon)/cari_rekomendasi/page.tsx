@@ -1,0 +1,154 @@
+"use client";
+// ─── app/(calon)/cari_rekomendasi/page.tsx
+// Halaman 3-step form rekomendasi tempat magang untuk calon mahasiswa magang
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import SidebarCalon from "@/components/layout/sidebar_calon";
+import DashboardNavbar from "@/components/layout/dashboard_navbar";
+import MiniFooter from "@/components/layout/mini_footer";
+import { Step1SkillDivisi } from "@/components/rekomendasi/Step1skilldivisi";
+import { Step2DetailMagang } from "@/components/rekomendasi/Step2detailmagang";
+import { Step3Review } from "@/components/rekomendasi/Step3review";
+import { StepIndicatorRekom } from "@/components/rekomendasi/Stepindicatorrekom";
+import type { Step1Data } from "@/components/rekomendasi/Step1skilldivisi";
+import type { Step2Data } from "@/components/rekomendasi/Step2detailmagang";
+
+// ── Constants ──────────────────────────────────────────────────────────────────
+const USER_NAME = "Arjuna";
+
+const INITIAL_STEP1: Step1Data = {
+  divisions: [],
+  skills: [],
+};
+const INITIAL_STEP2: Step2Data = {
+  locations: [],
+  durasi: "",
+};
+
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
+
+// ── Page ───────────────────────────────────────────────────────────────────────
+export default function CariRekomendasiPage() {
+  const router = useRouter();
+  const [currentStep, setCurrentStep] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const [step1Data, setStep1Data] = useState<Step1Data>(INITIAL_STEP1);
+  const [step2Data, setStep2Data] = useState<Step2Data>(INITIAL_STEP2);
+
+  // ── Submit ─────────────────────────────────────────────────────────────────
+  const handleGenerate = async () => {
+    setIsLoading(true);
+    try {
+      const token = localStorage.getItem("access_token");
+      const headers: HeadersInit = {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      };
+
+      // ── Step A: Simpan skill user ke DB dulu ────────────────────────────────
+      // BE (RecommendationController@generate) tidak baca skills dari request body.
+      // Dia load dari relasi user->skills di DB. Jadi harus sync dulu lewat endpoint ini.
+      const skillRes = await fetch(`${API_BASE}/skills/user`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ skills: step1Data.skills }),
+      });
+
+      if (!skillRes.ok) {
+        const err = await skillRes.json().catch(() => ({}));
+        throw new Error(
+          err?.message ?? `Gagal menyimpan skill (${skillRes.status})`
+        );
+      }
+
+      // ── Step B: Generate rekomendasi ────────────────────────────────────────
+      // BE hanya terima passion_division sebagai string tunggal.
+      // Kirim divisi pertama yang dipilih user.
+      const rekomRes = await fetch(`${API_BASE}/recommendations`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          passion_division: step1Data.divisions[0] ?? "",
+        }),
+      });
+
+      if (!rekomRes.ok) {
+        const err = await rekomRes.json().catch(() => ({}));
+        throw new Error(
+          err?.message ?? `Gagal generate rekomendasi (${rekomRes.status})`
+        );
+      }
+
+      // ── Navigasi ke halaman hasil ───────────────────────────────────────────
+      router.push("/riwayat_rekomendasi");
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : "Gagal generate rekomendasi.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // ── Render ─────────────────────────────────────────────────────────────────
+  return (
+    <div className="min-h-screen bg-[#EEF2FF]">
+      <SidebarCalon />
+      <DashboardNavbar
+        pageTitle="Cari Rekomendasi Magang"
+        userName={USER_NAME}
+        userRole="calon"
+      />
+      <main className="md:ml-60 pt-16 px-4 sm:px-6 lg:px-8 pb-10">
+        <div className="max-w-3xl mx-auto space-y-5 py-6">
+          <div className="bg-white rounded-2xl shadow-sm p-8">
+            {/* ── Header ──────────────────────────────────────────────────── */}
+            <div className="text-center mb-6">
+              <p className="text-indigo-600 text-sm font-semibold mb-1">
+                Step {currentStep} dari 3
+              </p>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                Rekomendasi Tempat Magang
+              </h2>
+              <p className="text-sm text-gray-500 max-w-md mx-auto leading-relaxed">
+                Isi data divisi, dan skill yang benar-benar kamu miliki dan
+                kuasai. Informasi ini akan membantu sistem memberikan
+                rekomendasi yang lebih akurat.
+              </p>
+            </div>
+
+            {/* ── Step Indicator ──────────────────────────────────────────── */}
+            <StepIndicatorRekom currentStep={currentStep} />
+
+            {/* ── Step Content ────────────────────────────────────────────── */}
+            {currentStep === 1 && (
+              <Step1SkillDivisi
+                data={step1Data}
+                onChange={setStep1Data}
+                onNext={() => setCurrentStep(2)}
+              />
+            )}
+            {currentStep === 2 && (
+              <Step2DetailMagang
+                data={step2Data}
+                onChange={setStep2Data}
+                onNext={() => setCurrentStep(3)}
+                onBack={() => setCurrentStep(1)}
+              />
+            )}
+            {currentStep === 3 && (
+              <Step3Review
+                step1={step1Data}
+                step2={step2Data}
+                onSubmit={handleGenerate}
+                onBack={() => setCurrentStep(2)}
+                isLoading={isLoading}
+              />
+            )}
+          </div>
+          <MiniFooter />
+        </div>
+      </main>
+    </div>
+  );
+}
