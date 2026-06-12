@@ -1,145 +1,61 @@
 "use client";
-
-import { useState } from "react";
+// ─── app/(calon)/riwayat_rekomendasi/page.tsx
+// Menampilkan hasil rekomendasi terakhir milik user dari GET /api/recommendations/my
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import SidebarCalon from "@/components/layout/sidebar_calon";
+import DashboardNavbar from "@/components/layout/dashboard_navbar";
+import MiniFooter from "@/components/layout/mini_footer";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-
-type TabType = "riwayat" | "wishlist";
-type WishlistFilter = "semua" | "perusahaan" | "divisi";
-
-interface RiwayatItem {
+// ── Types ──────────────────────────────────────────────────────────────────────
+interface Division {
   id: number;
-  title: string;
-  date: string;
-  tags: { label: string; type: "match" | "total" }[];
-}
-
-interface WishlistItem {
-  id: number;
-  type: "Perusahaan" | "Divisi";
-  rating: number;
   name: string;
-  company: string;
-  location: string;
-  internCount: number;
+  company: {
+    id: number;
+    name: string;
+    city?: string;
+    province?: string;
+  };
 }
 
-interface UserProfile {
-  nama: string;
+interface RecommendationItem {
+  id: number;
+  user_id: number;
+  division_id: number;
+  similarity_score: number;   // 0.0 – 1.0, hasil cosine similarity
+  suitability_avg: number;    // rata-rata rating alumni (1–5)
+  experience_summary: string | null;
+  matched_skills: string[] | null;
+  division: Division;
+  created_at: string;
 }
 
-const STORAGE_KEY = "sinara-profile";
+// ── Helpers ────────────────────────────────────────────────────────────────────
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
 
-function getSavedProfile(): UserProfile {
-  if (typeof window === "undefined") return { nama: "Arjuna Wiguna" };
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? (JSON.parse(stored) as UserProfile) : { nama: "Arjuna Wiguna" };
-  } catch {
-    return { nama: "Arjuna Wiguna" };
-  }
+/** Konversi skor 0–1 ke label + warna */
+function matchLabel(score: number): { label: string; color: string } {
+  if (score >= 0.75) return { label: "Sangat Cocok", color: "emerald" };
+  if (score >= 0.5) return { label: "Cocok", color: "indigo" };
+  if (score >= 0.3) return { label: "Cukup Cocok", color: "amber" };
+  return { label: "Kurang Cocok", color: "gray" };
 }
 
-// ─── Mock Data ────────────────────────────────────────────────────────────────
+/** Format skor 0–1 ke persentase */
+function pct(score: number) {
+  return `${Math.round(score * 100)}%`;
+}
 
-const mockProfile: UserProfile = {
-  nama: "Arjuna Wiguna",
-};
-
-const riwayatData: RiwayatItem[] = [
-  {
-    id: 1,
-    title: "Rekomendasi Magang — Profil Tech & Data",
-    date: "24 Oktober 2024 • 14:30 WIB",
-    tags: [
-      { label: "3 Divisi Sangat Cocok", type: "match" },
-      { label: "8 Total Divisi Ditemukan", type: "total" },
-    ],
-  },
-  {
-    id: 2,
-    title: "Rekomendasi Magang — Profil Software Engineering",
-    date: "12 Oktober 2024 • 09:15 WIB",
-    tags: [
-      { label: "2 Divisi Sangat Cocok", type: "match" },
-      { label: "5 Total Divisi Ditemukan", type: "total" },
-    ],
-  },
-  {
-    id: 3,
-    title: "Rekomendasi Magang — Eksplorasi Awal",
-    date: "01 September 2024 • 19:40 WIB",
-    tags: [{ label: "12 Total Divisi Ditemukan", type: "total" }],
-  },
-];
-
-const wishlistData: WishlistItem[] = [
-  {
-    id: 1,
-    type: "Perusahaan",
-    rating: 4,
-    name: "PT Espay Debit Indonesia Koe",
-    company: "Fintech & Infrastruktur Pembayaran",
-    location: "CBD Kuningan, Jakarta Selatan",
-    internCount: 143,
-  },
-  {
-    id: 2,
-    type: "Divisi",
-    rating: 5,
-    name: "Product Management Intern",
-    company: "PT Sinar Digital Terdepan",
-    location: "AXA Tower, Jakarta Selatan",
-    internCount: 118,
-  },
-  {
-    id: 3,
-    type: "Divisi",
-    rating: 5,
-    name: "Product Management Intern",
-    company: "PT Sinar Digital Terdepan",
-    location: "AXA Tower, Jakarta Selatan",
-    internCount: 118,
-  },
-  {
-    id: 4,
-    type: "Perusahaan",
-    rating: 4,
-    name: "PT Espay Debit Indonesia Koe",
-    company: "Fintech & Infrastruktur Pembayaran",
-    location: "CBD Kuningan, Jakarta Selatan",
-    internCount: 143,
-  },
-  {
-    id: 5,
-    type: "Divisi",
-    rating: 5,
-    name: "Product Management Intern",
-    company: "PT Sinar Digital Terdepan",
-    location: "AXA Tower, Jakarta Selatan",
-    internCount: 118,
-  },
-  {
-    id: 6,
-    type: "Divisi",
-    rating: 5,
-    name: "Product Management Intern",
-    company: "PT Sinar Digital Terdepan",
-    location: "AXA Tower, Jakarta Selatan",
-    internCount: 118,
-  },
-];
-
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
+// ── Sub-components ─────────────────────────────────────────────────────────────
 function StarRating({ rating, max = 5 }: { rating: number; max?: number }) {
   return (
     <div className="flex gap-0.5">
       {Array.from({ length: max }).map((_, i) => (
         <svg
           key={i}
-          className={`w-4 h-4 ${i < rating ? "text-amber-400" : "text-gray-200"}`}
+          className={`w-4 h-4 ${i < Math.round(rating) ? "text-amber-400" : "text-gray-200"}`}
           fill="currentColor"
           viewBox="0 0 20 20"
         >
@@ -150,245 +66,312 @@ function StarRating({ rating, max = 5 }: { rating: number; max?: number }) {
   );
 }
 
-function WishlistCard({ item }: { item: WishlistItem }) {
-  const isPerusahaan = item.type === "Perusahaan";
-
+function ScoreBadge({ score }: { score: number }) {
+  const { label, color } = matchLabel(score);
+  const colorMap: Record<string, string> = {
+    emerald: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    indigo: "bg-indigo-50 text-indigo-700 border-indigo-200",
+    amber: "bg-amber-50 text-amber-700 border-amber-200",
+    gray: "bg-gray-100 text-gray-600 border-gray-200",
+  };
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col gap-3 hover:shadow-md transition-shadow duration-200 min-w-[18rem] sm:min-w-full snap-start">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <span
-          className={`text-sm font-semibold px-3 py-1 rounded-full border ${
-            isPerusahaan
-              ? "border-indigo-200 text-indigo-700 bg-indigo-50"
-              : "border-purple-200 text-purple-700 bg-purple-50"
-          }`}
-        >
-          {item.type}
-        </span>
-        <StarRating rating={item.rating} />
-      </div>
-
-      {/* Info */}
-      <div>
-        <h3 className="font-bold text-gray-900 text-base leading-tight">{item.name}</h3>
-        <p className="text-sm text-gray-500 mt-0.5">{item.company}</p>
-      </div>
-
-      {/* Meta */}
-      <div className="flex flex-col gap-1">
-        <div className="flex items-center gap-1.5 text-sm text-gray-500">
-          <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-          <span>{item.location}</span>
-        </div>
-        <div className="flex items-center gap-1.5 text-sm text-gray-500">
-          <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-          <span>{item.internCount} mahasiswa telah magang</span>
-        </div>
-      </div>
-
-      {/* CTA */}
-      <button className="w-full mt-1 border border-indigo-300 text-indigo-700 font-semibold text-sm py-2 rounded-xl hover:bg-indigo-50 transition-colors duration-150">
-        Lihat detail
-      </button>
-    </div>
+    <span
+      className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${colorMap[color]}`}
+    >
+      {label}
+    </span>
   );
 }
 
-function RiwayatCard({ item }: { item: RiwayatItem }) {
-  return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:shadow-md transition-shadow duration-200 min-w-[19rem] sm:min-w-full snap-start">
-      <div className="flex-1 flex items-start sm:items-center gap-4 w-full">
-        {/* Icon */}
-        <div className="w-11 h-11 rounded-xl bg-indigo-50 flex items-center justify-center flex-shrink-0">
-          <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2h-2" />
-          </svg>
-        </div>
+function RecommendationCard({
+  item,
+  rank,
+}: {
+  item: RecommendationItem;
+  rank: number;
+}) {
+  const location = [item.division.company.city, item.division.company.province]
+    .filter(Boolean)
+    .join(", ");
 
-        {/* Text */}
-        <div className="min-w-0">
-          <h3 className="font-bold text-gray-900 text-base">{item.title}</h3>
-          <div className="flex items-center gap-1.5 mt-1 text-sm text-gray-500">
-            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            <span>{item.date}</span>
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col gap-4 hover:shadow-md transition-shadow duration-200">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          {/* Rank badge */}
+          <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white text-sm font-bold flex items-center justify-center shrink-0">
+            #{rank}
           </div>
-          <div className="flex flex-wrap gap-2 mt-2">
-            {item.tags.map((tag, idx) => (
+          <div className="min-w-0">
+            <h3 className="font-bold text-gray-900 text-base leading-tight truncate">
+              {item.division.name}
+            </h3>
+            <p className="text-sm text-gray-500 mt-0.5 truncate">
+              {item.division.company.name}
+            </p>
+          </div>
+        </div>
+        <ScoreBadge score={item.similarity_score} />
+      </div>
+
+      {/* Score bar */}
+      <div>
+        <div className="flex items-center justify-between mb-1.5">
+          <span className="text-xs text-gray-500">Skor Kemiripan</span>
+          <span className="text-xs font-bold text-indigo-600">
+            {pct(item.similarity_score)}
+          </span>
+        </div>
+        <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-indigo-400 transition-all duration-700"
+            style={{ width: pct(item.similarity_score) }}
+          />
+        </div>
+      </div>
+
+      {/* Meta */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-gray-500">
+        {/* Rating alumni */}
+        <div className="flex items-center gap-1.5">
+          <StarRating rating={item.suitability_avg} />
+          <span className="text-xs text-gray-400">
+            ({item.suitability_avg.toFixed(1)} / 5 dari alumni)
+          </span>
+        </div>
+        {/* Lokasi */}
+        {location && (
+          <div className="flex items-center gap-1">
+            <svg
+              className="w-4 h-4 text-gray-400 shrink-0"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+              />
+            </svg>
+            <span>{location}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Matched skills */}
+      {item.matched_skills && item.matched_skills.length > 0 && (
+        <div>
+          <p className="text-xs font-semibold text-gray-500 mb-2">
+            Skill yang cocok:
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {item.matched_skills.map((skill) => (
               <span
-                key={idx}
-                className={`text-xs font-medium px-2.5 py-1 rounded-full ${
-                  tag.type === "match"
-                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                    : "bg-gray-100 text-gray-600 border border-gray-200"
-                }`}
+                key={skill}
+                className="text-xs px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100 font-medium"
               >
-                {tag.type === "match" && (
-                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 align-middle" />
-                )}
-                {tag.label}
+                {skill}
               </span>
             ))}
           </div>
         </div>
-      </div>
+      )}
 
-      <button className="w-full sm:w-auto border border-gray-200 text-gray-700 font-semibold text-sm px-4 py-2 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-colors duration-150 whitespace-nowrap">
-        Lihat Detail Rekomendasi
+      {/* Experience summary */}
+      {item.experience_summary && (
+        <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
+          <p className="text-xs font-semibold text-gray-500 mb-1">
+            Ringkasan pengalaman alumni:
+          </p>
+          <p className="text-sm text-gray-700 leading-relaxed line-clamp-3">
+            {item.experience_summary}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function EmptyState({ onCari }: { onCari: () => void }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-16 text-center">
+      <div className="w-16 h-16 rounded-2xl bg-indigo-50 flex items-center justify-center mb-4">
+        <svg
+          className="w-8 h-8 text-indigo-400"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.5}
+            d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+          />
+        </svg>
+      </div>
+      <h3 className="text-lg font-bold text-gray-800 mb-1">
+        Belum Ada Rekomendasi
+      </h3>
+      <p className="text-sm text-gray-500 max-w-xs leading-relaxed mb-6">
+        Kamu belum pernah melakukan pencarian rekomendasi. Mulai sekarang dan
+        temukan tempat magang yang paling sesuai dengan skillmu!
+      </p>
+      <button
+        onClick={onCari}
+        className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-sm font-semibold rounded-xl transition-all shadow-sm shadow-indigo-200"
+      >
+        Cari Rekomendasi Sekarang
       </button>
     </div>
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+// ── Main Page ──────────────────────────────────────────────────────────────────
+export default function RiwayatRekomendasiPage() {
+  const router = useRouter();
+  const [recommendations, setRecommendations] = useState<RecommendationItem[]>(
+    []
+  );
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-export default function RiwayatPencarian() {
-  const [activeTab, setActiveTab] = useState<TabType>("riwayat");
-  const [wishlistFilter, setWishlistFilter] = useState<WishlistFilter>("semua");
+  useEffect(() => {
+    const fetchRecommendations = async () => {
+      try {
+        const token = localStorage.getItem("access_token");
+        const res = await fetch(`${API_BASE}/recommendations/my`, {
+          headers: {
+            Accept: "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
 
-  const [profile] = useState<UserProfile>(getSavedProfile());
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err?.message ?? `Error ${res.status}`);
+        }
 
-  const filteredWishlist = wishlistData.filter((item) => {
-    if (wishlistFilter === "semua") return true;
-    if (wishlistFilter === "perusahaan") return item.type === "Perusahaan";
-    if (wishlistFilter === "divisi") return item.type === "Divisi";
-    return true;
-  });
+        const json = await res.json();
+        // BE return: { message: "...", data: [...] }
+        setRecommendations(json.data ?? []);
+      } catch (err: unknown) {
+        setError(
+          err instanceof Error ? err.message : "Gagal memuat rekomendasi."
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const riwayatCount = riwayatData.length;
-  const wishlistCount = wishlistData.length;
+    fetchRecommendations();
+  }, []);
+
+  // ── Render helpers ─────────────────────────────────────────────────────────
+  const renderContent = () => {
+    if (isLoading) {
+      return (
+        <div className="flex flex-col gap-4">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 animate-pulse"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-9 h-9 rounded-xl bg-gray-200" />
+                <div className="flex-1">
+                  <div className="h-4 bg-gray-200 rounded w-2/3 mb-2" />
+                  <div className="h-3 bg-gray-100 rounded w-1/2" />
+                </div>
+              </div>
+              <div className="h-2 bg-gray-100 rounded-full w-full mb-4" />
+              <div className="flex gap-2">
+                <div className="h-6 bg-gray-100 rounded-full w-16" />
+                <div className="h-6 bg-gray-100 rounded-full w-20" />
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-center">
+          <p className="text-sm font-semibold text-red-700 mb-1">
+            Gagal memuat data
+          </p>
+          <p className="text-sm text-red-500">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 text-sm font-semibold text-red-600 border border-red-300 rounded-xl hover:bg-red-100 transition-colors"
+          >
+            Coba Lagi
+          </button>
+        </div>
+      );
+    }
+
+    if (recommendations.length === 0) {
+      return <EmptyState onCari={() => router.push("/cari_rekomendasi")} />;
+    }
+
+    return (
+      <div className="flex flex-col gap-4">
+        {recommendations.map((item, idx) => (
+          <RecommendationCard key={item.id} item={item} rank={idx + 1} />
+        ))}
+      </div>
+    );
+  };
 
   return (
-    <div className="flex min-h-screen bg-[#EEF0F8]">
-      {/* Sidebar */}
+    <div className="min-h-screen bg-[#EEF2FF]">
       <SidebarCalon />
-
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col min-h-screen md:ml-60">
-        {/* Top Bar */}
-        <header className="bg-white border-b border-gray-200 px-4 sm:px-8 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sticky top-0 z-10 pt-16 md:pt-4">
-          <h1 className="text-xl font-bold text-gray-900">Riwayat Rekomendasi</h1>
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-            <span className="text-sm font-medium text-gray-700">Halo, {profile.nama.split(" ")[0]}</span>
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center text-sm font-bold text-white border-2 border-indigo-100">
-              {profile.nama
-                .split(" ")
-                .map((n) => n[0])
-                .slice(0, 2)
-                .join("")
-                .toUpperCase()}
+      <DashboardNavbar
+        pageTitle="Riwayat Rekomendasi"
+        userName=""
+        userRole="calon"
+      />
+      <main className="md:ml-60 pt-16 px-4 sm:px-6 lg:px-8 pb-10">
+        <div className="max-w-3xl mx-auto space-y-5 py-6">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-xl font-bold text-gray-900">
+                Hasil Rekomendasi Magang
+              </h1>
+              <p className="text-sm text-gray-500 mt-0.5">
+                {isLoading
+                  ? "Memuat..."
+                  : recommendations.length > 0
+                  ? `${recommendations.length} rekomendasi ditemukan, diurutkan berdasarkan kemiripan tertinggi`
+                  : "Belum ada rekomendasi"}
+              </p>
             </div>
-          </div>
-        </header>
-
-        {/* Content Area */}
-        <main className="flex-1 px-4 sm:px-8 py-7">
-          {/* Tab Switcher */}
-          <div className="inline-flex flex-nowrap overflow-x-auto items-center gap-2 mb-7 rounded-full bg-white p-1 shadow-sm border border-gray-200">
             <button
-              onClick={() => setActiveTab("riwayat")}
-              className={`min-w-[10rem] flex-shrink-0 flex items-center justify-center gap-2 px-5 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
-                activeTab === "riwayat"
-                  ? "bg-gradient-to-r from-indigo-500 to-cyan-500 text-white shadow-sm shadow-indigo-200"
-                  : "bg-transparent text-gray-500 hover:text-gray-700"
-              }`}
+              onClick={() => router.push("/cari_rekomendasi")}
+              className="shrink-0 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-sm font-semibold rounded-xl transition-all shadow-sm shadow-indigo-200"
             >
-              Riwayat
-              <span
-                className={`text-xs px-2 py-1 rounded-full font-bold ${
-                  activeTab === "riwayat"
-                    ? "bg-white/20 text-white"
-                    : "bg-gray-100 text-gray-500"
-                }`}
-              >
-                {riwayatCount}
-              </span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab("wishlist")}
-              className={`min-w-[10rem] flex-shrink-0 flex items-center justify-center gap-2 px-5 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
-                activeTab === "wishlist"
-                  ? "bg-gradient-to-r from-indigo-500 to-cyan-500 text-white shadow-sm shadow-indigo-200"
-                  : "bg-transparent text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              Wishlist
-              <span
-                className={`text-xs px-2 py-1 rounded-full font-bold ${
-                  activeTab === "wishlist"
-                    ? "bg-white/20 text-white"
-                    : "bg-gray-100 text-gray-500"
-                }`}
-              >
-                {wishlistCount}
-              </span>
+              + Cari Baru
             </button>
           </div>
 
-          {/* ── RIWAYAT TAB ─────────────────────────────────────────────── */}
-          {activeTab === "riwayat" && (
-            <div>
-              <div className="mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">Riwayat Hasil Rekomendasi</h2>
-                <p className="text-sm text-gray-500 mt-1">
-                  Daftar hasil rekomendasi divisi magang yang pernah di-generate oleh AI untuk profilmu.
-                </p>
-              </div>
-              <div className="flex flex-row gap-4 overflow-x-auto pb-4 snap-x snap-mandatory sm:flex-col sm:overflow-visible">
-                {riwayatData.map((item) => (
-                  <RiwayatCard key={item.id} item={item} />
-                ))}
-              </div>
-            </div>
-          )}
+          {/* Content */}
+          {renderContent()}
 
-          {/* ── WISHLIST TAB ─────────────────────────────────────────────── */}
-          {activeTab === "wishlist" && (
-            <div>
-              <div className="mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">Wishlist Tersimpan</h2>
-                <p className="text-sm text-gray-500 mt-1">
-                  Daftar perusahaan dan divisi magang favoritmu
-                </p>
-              </div>
-
-              {/* Filter Pills */}
-              <div className="flex flex-wrap gap-2 mb-6">
-                {(["semua", "perusahaan", "divisi"] as WishlistFilter[]).map((filter) => (
-                  <button
-                    key={filter}
-                    onClick={() => setWishlistFilter(filter)}
-                    className={`px-4 py-2 rounded-full text-sm font-semibold capitalize transition-all duration-200 ${
-                      wishlistFilter === filter
-                        ? "bg-white text-indigo-700 border-2 border-indigo-500 shadow-sm"
-                        : "bg-transparent text-gray-500 border border-transparent hover:text-gray-700"
-                    }`}
-                  >
-                    {filter === "semua" ? "Semua Data" : filter.charAt(0).toUpperCase() + filter.slice(1)}
-                  </button>
-                ))}
-              </div>
-
-              {/* Grid */}
-              <div className="flex flex-row gap-4 overflow-x-auto pb-4 snap-x snap-mandatory sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:overflow-visible">
-                {filteredWishlist.map((item) => (
-                  <WishlistCard key={item.id} item={item} />
-                ))}
-              </div>
-            </div>
-          )}
-        </main>
-
-        
-      </div>
+          <MiniFooter />
+        </div>
+      </main>
     </div>
   );
 }
