@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { apiPost } from "@/services/api";
 import { TOKEN_KEY, ROLE_REDIRECT } from "@/app/constants/auth";
+import { Eye, EyeOff } from "lucide-react";
 
 type Role = "calon" | "alumni";
 type Step = 1 | 2;
@@ -81,6 +82,9 @@ export default function RegisterPage() {
   const handleSkip = () => {
     router.push(ROLE_REDIRECT[role]);
   };
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-10">
@@ -186,16 +190,23 @@ export default function RegisterPage() {
                 </p>
 
                 <form onSubmit={handleStep1} className="flex flex-col gap-4">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-sm font-medium text-gray-700">Nama Lengkap</label>
+                  <div className="relative">
                     <input
-                      type="text"
-                      placeholder="Masukkan nama lengkap sesuai KTM"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Buat kata sandi"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
                       required
-                      className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                      className="w-full px-4 py-2.5 pr-12 border border-gray-200 rounded-xl text-sm ..."
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      {/* pakai icon Eye/EyeOff dari lucide-react — sudah di-import di profil calon/alumni */}
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -223,28 +234,50 @@ export default function RegisterPage() {
                     </div>
                   </div>
 
+                  {/* Tambahkan input konfirmasi password dengan toggle show/hide */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* Password */}
                     <div className="flex flex-col gap-1.5">
                       <label className="text-sm font-medium text-gray-700">Password</label>
-                      <input
-                        type="password"
-                        placeholder="Buat kata sandi"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
-                      />
+                      <div className="relative">
+                        <input
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Buat kata sandi"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          required
+                          className="w-full px-4 py-2.5 pr-12 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        >
+                          {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
+                      </div>
                     </div>
+
+                    {/* Konfirmasi Password */}
                     <div className="flex flex-col gap-1.5">
                       <label className="text-sm font-medium text-gray-700">Konfirmasi Password</label>
-                      <input
-                        type="password"
-                        placeholder="Ulangi kata sandi"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        required
-                        className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
-                      />
+                      <div className="relative">
+                        <input
+                          type={showConfirmPassword ? "text" : "password"}
+                          placeholder="Ulangi kata sandi"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          required
+                          className="w-full px-4 py-2.5 pr-12 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        >
+                          {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
+                      </div>
                     </div>
                   </div>
 

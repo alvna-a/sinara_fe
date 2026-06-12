@@ -1,5 +1,8 @@
 "use client";
 
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { ROLE_REDIRECT } from "@/app/constants/auth";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -10,6 +13,23 @@ const navLinks = [
 ];
 
 export default function PublicNavbar() {
+  const router = useRouter();
+  const [user, setUser] = useState<{ name: string; role: string } | null>(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    const raw = localStorage.getItem("user");
+    if (token && raw) {
+      try { setUser(JSON.parse(raw)); } catch {}
+    }
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("user");
+    setUser(null);
+    router.push("/login");
+  };
   const pathname = usePathname();
 
   return (
@@ -43,22 +63,41 @@ export default function PublicNavbar() {
 
         {/* Auth */}
         <div className="flex items-center gap-3">
-          <Link
-            href="/login"
-            className="text-sm text-gray-600 hover:text-indigo-600 transition"
-          >
-            Masuk
-          </Link>
-
-          <Link
-            href="/register"
-            className="text-sm font-medium text-white px-5 py-2 rounded-full transition hover:opacity-90"
-            style={{
-              background: "linear-gradient(135deg, #6366f1 0%, #38bdf8 100%)",
-            }}
-          >
-            Daftar Sekarang
-          </Link>
+          {user ? (
+            <>
+              <button
+                onClick={() => router.push(ROLE_REDIRECT[user.role])}
+                className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 text-sm font-bold flex items-center justify-center hover:bg-indigo-200 transition"
+                title={`Dashboard ${user.name}`}
+              >
+                {user.name?.charAt(0).toUpperCase()}
+              </button>
+              <button
+                onClick={handleLogout}
+                className="text-sm text-gray-600 hover:text-red-500 transition"
+              >
+                Keluar
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                className="text-sm text-gray-600 hover:text-indigo-600 transition"
+              >
+                Masuk
+              </Link>
+              <Link
+                href="/register"
+                className="text-sm font-medium text-white px-5 py-2 rounded-full transition hover:opacity-90"
+                style={{
+                  background: "linear-gradient(135deg, #6366f1 0%, #38bdf8 100%)",
+                }}
+              >
+                Daftar Sekarang
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </nav>

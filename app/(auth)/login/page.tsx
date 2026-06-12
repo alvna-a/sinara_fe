@@ -59,15 +59,28 @@ export default function LoginPage() {
     const res = await apiPost("/login", { nim, password, role: selectedRole });
 
     if (res.access_token) {
-      // ✅ FIX TOKEN (INI YANG KRITIS)
-      localStorage.setItem(TOKEN_KEY, res.access_token);
-      localStorage.setItem("user", JSON.stringify(res.user));
+  const actualRole = res.user?.role ?? selectedRole;
 
-      // ✅ FIX ROUTING (GAK HARDCODE LAGI)
-      router.push(ROLE_REDIRECT[selectedRole]);
-    } else {
-      setError(res.message || "Login gagal. Periksa NIM dan password.");
+    // Role tidak cocok → tolak login, jangan simpan token
+    if (actualRole !== selectedRole) {
+      const roleLabel: Record<string, string> = {
+        alumni: "Sudah Magang",
+        calon: "Akan Magang",
+        admin: "Admin",
+      };
+      setError(
+        `Akun ini terdaftar sebagai "${roleLabel[actualRole] ?? actualRole}". ` +
+        `Silakan pilih role yang sesuai.`
+      );
+      return;
     }
+
+    localStorage.setItem(TOKEN_KEY, res.access_token);
+    localStorage.setItem("user", JSON.stringify(res.user));
+    router.push(ROLE_REDIRECT[actualRole]);
+  } else {
+    setError(res.message || "Login gagal. Periksa NIM dan password.");
+  }
   } catch {
     setError("Tidak dapat terhubung ke server.");
   } finally {
