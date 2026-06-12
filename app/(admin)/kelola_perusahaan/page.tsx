@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { Search, Pencil, Trash2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import SidebarAdmin from "@/components/layout/sidebar_admin";
 import DashboardNavbar from "@/components/layout/dashboard_navbar";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -31,24 +33,6 @@ type SortKeyPerusahaan = "nama" | "jumlahDivisi" | "tanggalUpdate" | null;
 type SortKeyDivisi = "namaDivisi" | "perusahaan" | "tanggalUpdate" | null;
 type SortDir = "asc" | "desc";
 
-// ─── Sample Data ──────────────────────────────────────────────────────────────
-
-const samplePerusahaan: Perusahaan[] = [
-  { id: 1, nama: "Tokopedia",                 jumlahDivisi: 4, totalFeedback: 45,  tanggalUpdate: "12 Mar 2024", tanggalRaw: new Date("2024-03-12") },
-  { id: 2, nama: "PT Telekomunikasi Selular", jumlahDivisi: 6, totalFeedback: 120, tanggalUpdate: "08 Mar 2024", tanggalRaw: new Date("2024-03-08") },
-  { id: 3, nama: "PT Algo Studio Nusantara",  jumlahDivisi: 2, totalFeedback: 14,  tanggalUpdate: "20 Feb 2024", tanggalRaw: new Date("2024-02-20") },
-  { id: 4, nama: "Gojek",                     jumlahDivisi: 5, totalFeedback: 89,  tanggalUpdate: "15 Feb 2024", tanggalRaw: new Date("2024-02-15") },
-  { id: 5, nama: "Shopee",                    jumlahDivisi: 3, totalFeedback: 56,  tanggalUpdate: "10 Feb 2024", tanggalRaw: new Date("2024-02-10") },
-];
-
-const sampleDivisi: Divisi[] = [
-  { id: 1, namaDivisi: "UI/UX Design Intern",  perusahaan: "Tokopedia",                initialPerusahaan: "T", colorClass: "bg-blue-100 text-blue-600",    totalFeedback: 15, tanggalUpdate: "12 Mar 2024", tanggalRaw: new Date("2024-03-12") },
-  { id: 2, namaDivisi: "Frontend Developer",   perusahaan: "Gojek",                    initialPerusahaan: "G", colorClass: "bg-green-100 text-green-600",   totalFeedback: 24, tanggalUpdate: "08 Mar 2024", tanggalRaw: new Date("2024-03-08") },
-  { id: 3, namaDivisi: "Network Engineer",     perusahaan: "PT Telekomunikasi Selular", initialPerusahaan: "P", colorClass: "bg-red-100 text-red-500",       totalFeedback: 12, tanggalUpdate: "20 Feb 2024", tanggalRaw: new Date("2024-02-20") },
-  { id: 4, namaDivisi: "Backend Developer",    perusahaan: "Shopee",                   initialPerusahaan: "S", colorClass: "bg-orange-100 text-orange-500", totalFeedback: 18, tanggalUpdate: "15 Feb 2024", tanggalRaw: new Date("2024-02-15") },
-  { id: 5, namaDivisi: "Data Analyst Intern",  perusahaan: "Tokopedia",                initialPerusahaan: "T", colorClass: "bg-blue-100 text-blue-600",    totalFeedback: 9,  tanggalUpdate: "10 Feb 2024", tanggalRaw: new Date("2024-02-10") },
-];
-
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function getInitialClass(nama: string): string {
@@ -58,8 +42,18 @@ function getInitialClass(nama: string): string {
     A: "bg-teal-100 text-teal-600",
     G: "bg-green-100 text-green-600",
     S: "bg-orange-100 text-orange-500",
+    B: "bg-purple-100 text-purple-600",
+    M: "bg-pink-100 text-pink-600",
+    D: "bg-yellow-100 text-yellow-600",
   };
   return map[nama.charAt(0).toUpperCase()] ?? "bg-slate-100 text-slate-600";
+}
+
+function formatTanggal(dateStr: string): string {
+  if (!dateStr) return "-";
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "-";
+  return d.toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
 }
 
 function ApprovedBadge({ count }: { count: number }) {
@@ -75,7 +69,7 @@ function ApprovedBadge({ count }: { count: number }) {
   );
 }
 
-// ─── SortableHeader: klik toggle asc/desc, tampilkan icon sesuai state ────────
+// ─── SortableHeader ───────────────────────────────────────────────────────────
 
 type SortableHeaderProps = {
   label: string;
@@ -108,38 +102,61 @@ function SortableHeader({ label, colKey, activeKey, dir, onSort }: SortableHeade
   );
 }
 
+// ─── Skeleton Row ─────────────────────────────────────────────────────────────
+
+function SkeletonRows({ cols }: { cols: number }) {
+  return (
+    <>
+      {[...Array(4)].map((_, i) => (
+        <tr key={i} className="animate-pulse border-b border-slate-100">
+          {[...Array(cols)].map((__, j) => (
+            <td key={j} className="px-4 py-4">
+              <div className="h-4 bg-slate-100 rounded w-3/4" />
+            </td>
+          ))}
+        </tr>
+      ))}
+    </>
+  );
+}
+
 // ─── Tab: Perusahaan ─────────────────────────────────────────────────────────
 
-function TabPerusahaan() {
+function TabPerusahaan({
+  data,
+  loading,
+  onDelete,
+}: {
+  data: Perusahaan[];
+  loading: boolean;
+  onDelete: (id: number) => void;
+}) {
   const [query, setQuery]     = useState("");
   const [sortKey, setSortKey] = useState<SortKeyPerusahaan>(null);
   const [sortDir, setSortDir] = useState<SortDir>("asc");
 
   function handleSort(key: SortKeyPerusahaan) {
     if (sortKey === key) {
-      // toggle direction jika kolom sama
       setSortDir((prev) => (prev === "asc" ? "desc" : "asc"));
     } else {
       setSortKey(key);
-      // default direction per kolom:
-      // nama → asc (A-Z), jumlahDivisi → asc (terkecil), tanggalUpdate → desc (terbaru)
       setSortDir(key === "tanggalUpdate" ? "desc" : "asc");
     }
   }
 
   const sorted = useMemo(() => {
-    const data = samplePerusahaan.filter((p) =>
+    const filtered = data.filter((p) =>
       p.nama.toLowerCase().includes(query.toLowerCase())
     );
-    if (!sortKey) return data;
-    return [...data].sort((a, b) => {
+    if (!sortKey) return filtered;
+    return [...filtered].sort((a, b) => {
       let cmp = 0;
-      if (sortKey === "nama")         cmp = a.nama.localeCompare(b.nama);
-      if (sortKey === "jumlahDivisi") cmp = a.jumlahDivisi - b.jumlahDivisi;
+      if (sortKey === "nama")          cmp = a.nama.localeCompare(b.nama);
+      if (sortKey === "jumlahDivisi")  cmp = a.jumlahDivisi - b.jumlahDivisi;
       if (sortKey === "tanggalUpdate") cmp = a.tanggalRaw.getTime() - b.tanggalRaw.getTime();
       return sortDir === "asc" ? cmp : -cmp;
     });
-  }, [query, sortKey, sortDir]);
+  }, [data, query, sortKey, sortDir]);
 
   return (
     <div className="mt-5">
@@ -159,64 +176,57 @@ function TabPerusahaan() {
           <thead>
             <tr className="border-b border-slate-100 bg-white">
               <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 w-12">No</th>
-              <SortableHeader
-                label="Perusahaan"
-                colKey="nama"
-                activeKey={sortKey}
-                dir={sortDir}
-                onSort={() => handleSort("nama")}
-              />
-              <SortableHeader
-                label="Jumlah Divisi"
-                colKey="jumlahDivisi"
-                activeKey={sortKey}
-                dir={sortDir}
-                onSort={() => handleSort("jumlahDivisi")}
-              />
-              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500">
-                Total Feedback (Approved)
-              </th>
-              <SortableHeader
-                label="Tanggal Update"
-                colKey="tanggalUpdate"
-                activeKey={sortKey}
-                dir={sortDir}
-                onSort={() => handleSort("tanggalUpdate")}
-              />
+              <SortableHeader label="Perusahaan" colKey="nama" activeKey={sortKey} dir={sortDir} onSort={() => handleSort("nama")} />
+              <SortableHeader label="Jumlah Divisi" colKey="jumlahDivisi" activeKey={sortKey} dir={sortDir} onSort={() => handleSort("jumlahDivisi")} />
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500">Total Feedback (Approved)</th>
+              <SortableHeader label="Tanggal Update" colKey="tanggalUpdate" activeKey={sortKey} dir={sortDir} onSort={() => handleSort("tanggalUpdate")} />
               <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500">Aksi</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {sorted.map((p, idx) => (
-              <tr key={p.id} className="hover:bg-slate-50/60 transition-colors">
-                <td className="px-4 py-4 text-slate-500 text-xs font-medium">
-                  {String(idx + 1).padStart(2, "0")}
-                </td>
-                <td className="px-4 py-4">
-                  <div className="flex items-center gap-3">
-                    <div className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold ${getInitialClass(p.nama)}`}>
-                      {p.nama.charAt(0)}
-                    </div>
-                    <span className="font-semibold text-slate-900">{p.nama}</span>
-                  </div>
-                </td>
-                <td className="px-4 py-4 text-slate-700">{p.jumlahDivisi} Divisi</td>
-                <td className="px-4 py-4">
-                  <ApprovedBadge count={p.totalFeedback} />
-                </td>
-                <td className="px-4 py-4 text-slate-600">{p.tanggalUpdate}</td>
-                <td className="px-4 py-4">
-                  <div className="flex items-center gap-3">
-                    <button className="text-slate-400 hover:text-[#3b5bdb] transition-colors">
-                      <Pencil size={16} />
-                    </button>
-                    <button className="text-slate-400 hover:text-rose-500 transition-colors">
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
+            {loading ? (
+              <SkeletonRows cols={6} />
+            ) : sorted.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="px-4 py-10 text-center text-sm text-slate-400">
+                  {query ? "Perusahaan tidak ditemukan." : "Belum ada data perusahaan."}
                 </td>
               </tr>
-            ))}
+            ) : (
+              sorted.map((p, idx) => (
+                <tr key={p.id} className="hover:bg-slate-50/60 transition-colors">
+                  <td className="px-4 py-4 text-slate-500 text-xs font-medium">
+                    {String(idx + 1).padStart(2, "0")}
+                  </td>
+                  <td className="px-4 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold ${getInitialClass(p.nama)}`}>
+                        {p.nama.charAt(0)}
+                      </div>
+                      <span className="font-semibold text-slate-900">{p.nama}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-4 text-slate-700">{p.jumlahDivisi} Divisi</td>
+                  <td className="px-4 py-4">
+                    <ApprovedBadge count={p.totalFeedback} />
+                  </td>
+                  <td className="px-4 py-4 text-slate-600">{p.tanggalUpdate}</td>
+                  <td className="px-4 py-4">
+                    <div className="flex items-center gap-3">
+                      <button className="text-slate-400 hover:text-[#3b5bdb] transition-colors">
+                        <Pencil size={16} />
+                      </button>
+                      <button
+                        onClick={() => onDelete(p.id)}
+                        className="text-slate-400 hover:text-rose-500 transition-colors"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
@@ -226,7 +236,13 @@ function TabPerusahaan() {
 
 // ─── Tab: Divisi ─────────────────────────────────────────────────────────────
 
-function TabDivisi() {
+function TabDivisi({
+  data,
+  loading,
+}: {
+  data: Divisi[];
+  loading: boolean;
+}) {
   const [query, setQuery]     = useState("");
   const [sortKey, setSortKey] = useState<SortKeyDivisi>(null);
   const [sortDir, setSortDir] = useState<SortDir>("asc");
@@ -241,20 +257,20 @@ function TabDivisi() {
   }
 
   const sorted = useMemo(() => {
-    const data = sampleDivisi.filter(
+    const filtered = data.filter(
       (d) =>
         d.namaDivisi.toLowerCase().includes(query.toLowerCase()) ||
         d.perusahaan.toLowerCase().includes(query.toLowerCase())
     );
-    if (!sortKey) return data;
-    return [...data].sort((a, b) => {
+    if (!sortKey) return filtered;
+    return [...filtered].sort((a, b) => {
       let cmp = 0;
-      if (sortKey === "namaDivisi")   cmp = a.namaDivisi.localeCompare(b.namaDivisi);
-      if (sortKey === "perusahaan")   cmp = a.perusahaan.localeCompare(b.perusahaan);
+      if (sortKey === "namaDivisi")    cmp = a.namaDivisi.localeCompare(b.namaDivisi);
+      if (sortKey === "perusahaan")    cmp = a.perusahaan.localeCompare(b.perusahaan);
       if (sortKey === "tanggalUpdate") cmp = a.tanggalRaw.getTime() - b.tanggalRaw.getTime();
       return sortDir === "asc" ? cmp : -cmp;
     });
-  }, [query, sortKey, sortDir]);
+  }, [data, query, sortKey, sortDir]);
 
   return (
     <div className="mt-5">
@@ -274,66 +290,56 @@ function TabDivisi() {
           <thead>
             <tr className="border-b border-slate-100 bg-white">
               <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 w-12">No</th>
-              <SortableHeader
-                label="Nama Divisi"
-                colKey="namaDivisi"
-                activeKey={sortKey}
-                dir={sortDir}
-                onSort={() => handleSort("namaDivisi")}
-              />
-              <SortableHeader
-                label="Perusahaan"
-                colKey="perusahaan"
-                activeKey={sortKey}
-                dir={sortDir}
-                onSort={() => handleSort("perusahaan")}
-              />
-              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500">
-                Total Feedback (Approved)
-              </th>
-              <SortableHeader
-                label="Tanggal Update"
-                colKey="tanggalUpdate"
-                activeKey={sortKey}
-                dir={sortDir}
-                onSort={() => handleSort("tanggalUpdate")}
-              />
+              <SortableHeader label="Nama Divisi" colKey="namaDivisi" activeKey={sortKey} dir={sortDir} onSort={() => handleSort("namaDivisi")} />
+              <SortableHeader label="Perusahaan" colKey="perusahaan" activeKey={sortKey} dir={sortDir} onSort={() => handleSort("perusahaan")} />
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500">Total Feedback (Approved)</th>
+              <SortableHeader label="Tanggal Update" colKey="tanggalUpdate" activeKey={sortKey} dir={sortDir} onSort={() => handleSort("tanggalUpdate")} />
               <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500">Aksi</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {sorted.map((d, idx) => (
-              <tr key={d.id} className="hover:bg-slate-50/60 transition-colors">
-                <td className="px-4 py-4 text-slate-500 text-xs font-medium">
-                  {String(idx + 1).padStart(2, "0")}
-                </td>
-                <td className="px-4 py-4">
-                  <span className="font-semibold text-slate-900">{d.namaDivisi}</span>
-                </td>
-                <td className="px-4 py-4">
-                  <div className="flex items-center gap-2">
-                    <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${d.colorClass}`}>
-                      {d.initialPerusahaan}
-                    </div>
-                    <span className="text-slate-700">{d.perusahaan}</span>
-                  </div>
-                </td>
-                <td className="px-4 py-4">
-                  <ApprovedBadge count={d.totalFeedback} />
-                </td>
-                <td className="px-4 py-4 text-slate-600">{d.tanggalUpdate}</td>
-                <td className="px-4 py-4">
-                  <div className="flex items-center gap-3">
-                    <button className="text-slate-400 hover:text-[#3b5bdb] transition-colors">
-                      <Pencil size={16} />
-                    </button>
-                    <button className="text-slate-400 hover:text-rose-500 transition-colors">
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
+            {loading ? (
+              <SkeletonRows cols={6} />
+            ) : sorted.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="px-4 py-10 text-center text-sm text-slate-400">
+                  {query ? "Divisi tidak ditemukan." : "Belum ada data divisi."}
                 </td>
               </tr>
-            ))}
+            ) : (
+              sorted.map((d, idx) => (
+                <tr key={d.id} className="hover:bg-slate-50/60 transition-colors">
+                  <td className="px-4 py-4 text-slate-500 text-xs font-medium">
+                    {String(idx + 1).padStart(2, "0")}
+                  </td>
+                  <td className="px-4 py-4">
+                    <span className="font-semibold text-slate-900">{d.namaDivisi}</span>
+                  </td>
+                  <td className="px-4 py-4">
+                    <div className="flex items-center gap-2">
+                      <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${d.colorClass}`}>
+                        {d.initialPerusahaan}
+                      </div>
+                      <span className="text-slate-700">{d.perusahaan}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-4">
+                    <ApprovedBadge count={d.totalFeedback} />
+                  </td>
+                  <td className="px-4 py-4 text-slate-600">{d.tanggalUpdate}</td>
+                  <td className="px-4 py-4">
+                    <div className="flex items-center gap-3">
+                      <button className="text-slate-400 hover:text-[#3b5bdb] transition-colors">
+                        <Pencil size={16} />
+                      </button>
+                      <button className="text-slate-400 hover:text-rose-500 transition-colors">
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
@@ -345,8 +351,109 @@ function TabDivisi() {
 
 type ActiveTab = "perusahaan" | "divisi";
 
+// mapping warna initial berdasarkan huruf pertama nama perusahaan
+function getDivisiColorClass(namaPerusahaan: string): string {
+  const map: Record<string, string> = {
+    T: "bg-blue-100 text-blue-600",
+    P: "bg-red-100 text-red-500",
+    A: "bg-teal-100 text-teal-600",
+    G: "bg-green-100 text-green-600",
+    S: "bg-orange-100 text-orange-500",
+    B: "bg-purple-100 text-purple-600",
+    M: "bg-pink-100 text-pink-600",
+    D: "bg-yellow-100 text-yellow-600",
+  };
+  return map[namaPerusahaan.charAt(0).toUpperCase()] ?? "bg-slate-100 text-slate-600";
+}
+
 export default function KelolaPerusahaanPage() {
-  const [activeTab, setActiveTab] = useState<ActiveTab>("perusahaan");
+  const [activeTab, setActiveTab]         = useState<ActiveTab>("perusahaan");
+  const [perusahaanData, setPerusahaanData] = useState<Perusahaan[]>([]);
+  const [divisiData, setDivisiData]         = useState<Divisi[]>([]);
+  const [loading, setLoading]               = useState(true);
+  const [error, setError]                   = useState<string | null>(null);
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const token = localStorage.getItem("access_token");
+      const res = await fetch(`${API_URL}/api/admin/companies`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
+      });
+
+      if (!res.ok) throw new Error(`Error ${res.status}`);
+      const json = await res.json();
+      const raw: any[] = json.data ?? [];
+
+      // ── Map ke format Perusahaan ──────────────────────────────────────────
+      const mappedPerusahaan: Perusahaan[] = raw.map((c) => {
+        const approvedCount = (c.divisions ?? []).reduce(
+          (sum: number, div: any) =>
+            sum + (div.feedbacks ?? []).filter((f: any) => f.status === "approved").length,
+          0
+        );
+        const updateDate = new Date(c.updated_at ?? c.created_at);
+        return {
+          id: c.id,
+          nama: c.name,
+          jumlahDivisi: (c.divisions ?? []).length,
+          totalFeedback: approvedCount,
+          tanggalUpdate: formatTanggal(c.updated_at ?? c.created_at),
+          tanggalRaw: isNaN(updateDate.getTime()) ? new Date(0) : updateDate,
+        };
+      });
+
+      // ── Map ke format Divisi (flatten semua divisions) ────────────────────
+      const mappedDivisi: Divisi[] = raw.flatMap((c) =>
+        (c.divisions ?? []).map((div: any) => {
+          const approvedCount = (div.feedbacks ?? []).filter(
+            (f: any) => f.status === "approved"
+          ).length;
+          const updateDate = new Date(div.updated_at ?? div.created_at ?? c.updated_at);
+          return {
+            id: div.id,
+            namaDivisi: div.name,
+            perusahaan: c.name,
+            initialPerusahaan: c.name.charAt(0).toUpperCase(),
+            colorClass: getDivisiColorClass(c.name),
+            totalFeedback: approvedCount,
+            tanggalUpdate: formatTanggal(div.updated_at ?? div.created_at ?? c.updated_at),
+            tanggalRaw: isNaN(updateDate.getTime()) ? new Date(0) : updateDate,
+          };
+        })
+      );
+
+      setPerusahaanData(mappedPerusahaan);
+      setDivisiData(mappedDivisi);
+    } catch (err) {
+      setError("Gagal memuat data. Coba refresh halaman.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const handleDeletePerusahaan = async (id: number) => {
+    if (!confirm("Hapus perusahaan ini? Semua divisi terkait juga akan dihapus.")) return;
+    try {
+      const token = localStorage.getItem("access_token");
+      const res = await fetch(`${API_URL}/api/admin/companies/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+      });
+      if (!res.ok) throw new Error();
+      fetchData(); // refresh setelah hapus
+    } catch {
+      alert("Gagal menghapus perusahaan. Coba lagi.");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#eef0f8] font-sans">
@@ -356,6 +463,12 @@ export default function KelolaPerusahaanPage() {
       <main className="md:ml-60 pt-16 px-4 sm:px-6 lg:px-8 pb-10">
         <div className="mx-auto w-full max-w-[1280px] py-6">
           <div className="rounded-2xl bg-white border border-slate-100 shadow-sm px-6 pt-5 pb-6">
+
+            {error && (
+              <div className="mb-4 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600">
+                {error}
+              </div>
+            )}
 
             {/* Tabs */}
             <div className="flex gap-6 border-b border-slate-200">
@@ -375,7 +488,15 @@ export default function KelolaPerusahaanPage() {
             </div>
 
             {/* Tab Content */}
-            {activeTab === "perusahaan" ? <TabPerusahaan /> : <TabDivisi />}
+            {activeTab === "perusahaan" ? (
+              <TabPerusahaan
+                data={perusahaanData}
+                loading={loading}
+                onDelete={handleDeletePerusahaan}
+              />
+            ) : (
+              <TabDivisi data={divisiData} loading={loading} />
+            )}
           </div>
         </div>
       </main>
