@@ -15,6 +15,9 @@ export interface UserProfile {
   phone: string;
   program_studi: string;
   semester: string;
+  kelas?: string;
+  tahun_angkatan?: number;
+  status_magang?: "Belum Magang" | "Sedang Magang" | "Selesai Magang";
   photo: string | null;
   kelengkapan_profil: number;
 }
@@ -28,6 +31,9 @@ const DEFAULT: UserProfile = {
   phone: "",
   program_studi: "",
   semester: "",
+  kelas: "",
+  tahun_angkatan: undefined,
+  status_magang: "Belum Magang",
   photo: null,
   kelengkapan_profil: 0,
 };
@@ -89,6 +95,8 @@ export function useProfile() {
         phone: profileData?.phone ?? "",
         program_studi: profileData?.program_studi ?? "",
         semester: profileData?.semester ?? "",
+        kelas: profileData?.kelas ?? "",
+        tahun_angkatan: profileData?.tahun_angkatan ?? undefined,
         photo: photoUrl,
         kelengkapan_profil: calcKelengkapan(user, profileData),
       });

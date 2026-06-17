@@ -1,99 +1,80 @@
-
 "use client";
 import SidebarCalon from "@/components/layout/sidebar_calon";
 import { CompanyGridCard, Company } from "@/components/recommendation/CompanyGridCard";
 import { useEffect, useState } from "react";
+import { useProfile } from "@/hooks/useProfile";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
 
-interface UserProfile {
-  nim: string;
-  nama: string;
-  program_studi: string;
-  semester: number;
-  kelas: string;
-  tahun_angkatan: number;
-  email: string;
-  phone: string;
-  photo: string | null;
-  status_magang: "Belum Magang" | "Sedang Magang" | "Selesai Magang";
-  kelengkapan_profil: number;
-}
-
-const STORAGE_KEY = "sinara-profile";
-
-const mockProfile: UserProfile = {
-  nim: "3.34.22.1.01",
-  nama: "Arjuna Wiguna",
-  program_studi: "D3 - Teknik Informatika",
-  semester: 4,
-  kelas: "IK - 3B",
-  tahun_angkatan: 2022,
-  email: "arjuna.33422101@mhs.polines.ac.id",
-  phone: "08987654321",
-  photo: null,
-  status_magang: "Belum Magang",
-  kelengkapan_profil: 80,
-};
-
-function getSavedProfile(): UserProfile {
-  if (typeof window === "undefined") return mockProfile;
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? (JSON.parse(stored) as UserProfile) : mockProfile;
-  } catch {
-    return mockProfile;
-  }
-}
-
-
 export default function CalonDashboard() {
+  const { profile, loading: profileLoading } = useProfile();
   const [companies, setCompanies] = useState<Company[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingCompanies, setLoadingCompanies] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [profile] = useState<UserProfile>(getSavedProfile());
 
   useEffect(() => {
-    setLoading(true);
+    setLoadingCompanies(true);
     setError(null);
     fetch(`${API_BASE}/companies?page=1`)
       .then((r) => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); })
       .then((json) => setCompanies(json.data ?? []))
       .catch(() => setError("Gagal memuat data perusahaan."))
-      .finally(() => setLoading(false));
+      .finally(() => setLoadingCompanies(false));
   }, []);
 
+  const firstName = profile?.name?.split(" ")[0] ?? "";
+  const kelengkapan = profile?.kelengkapan_profil ?? 0;
 
   return (
     <div className="min-h-screen bg-[#F0F2FA] flex">
       <SidebarCalon />
       <main className="flex-1 md:ml-60 px-4 sm:px-6 lg:px-8 pt-16 md:pt-4 sm:py-6 lg:py-8">
+
         {/* Header Welcome */}
         <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 mb-6 lg:mb-8">
           <div className="flex-1 bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100">
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 flex flex-wrap items-center gap-2">
-              Selamat Datang, <span className="text-indigo-700">{profile.nama.split(" ")[0]}</span> <span>👋</span>
+              {profileLoading ? (
+                <span className="h-7 w-48 bg-gray-200 rounded animate-pulse inline-block" />
+              ) : (
+                <>
+                  Selamat Datang,{" "}
+                  <span className="text-indigo-700">{firstName}</span>{" "}
+                  <span>👋</span>
+                </>
+              )}
             </h2>
-            <p className="text-gray-500 text-sm mb-4 max-w-xl">Masukkan skill yang kamu miliki, dan lihat divisi mana yang paling relevan untukmu. Biarkan sistem membantu menemukan posisi yang paling cocok berdasarkan skill yang kamu miliki.</p>
+            <p className="text-gray-500 text-sm mb-4 max-w-xl">
+              Masukkan skill yang kamu miliki, dan lihat divisi mana yang paling relevan untukmu. Biarkan sistem membantu menemukan posisi yang paling cocok berdasarkan skill yang kamu miliki.
+            </p>
             <div>
               <div className="flex items-center justify-between mb-1">
                 <span className="text-xs text-gray-500 font-medium">Status kelengkapan profil</span>
-                <span className="text-xs text-indigo-700 font-semibold">{profile.kelengkapan_profil}%</span>
+                {profileLoading ? (
+                  <span className="h-4 w-8 bg-gray-200 rounded animate-pulse inline-block" />
+                ) : (
+                  <span className="text-xs text-indigo-700 font-semibold">{kelengkapan}%</span>
+                )}
               </div>
               <div className="w-full bg-gray-100 rounded-full h-2">
-                <div className="bg-indigo-500 h-2 rounded-full" style={{ width: `${profile.kelengkapan_profil}%` }} />
+                <div
+                  className="bg-indigo-500 h-2 rounded-full transition-all duration-700"
+                  style={{ width: `${kelengkapan}%` }}
+                />
               </div>
             </div>
           </div>
+
           <div className="w-full lg:w-80 bg-indigo-50 rounded-2xl p-4 sm:p-6 flex flex-col justify-between shadow-sm border border-indigo-100">
             <div>
               <h3 className="text-base sm:text-lg font-bold text-indigo-700 mb-2">Cari Rekomendasi Sekarang</h3>
               <p className="text-sm text-indigo-700 mb-4">Kami akan membantu untuk menyaring lowongan berdasarkan skill, minat divisi, dan profilmu tanpa perlu cek satu per satu.</p>
             </div>
-            <button className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg py-2 px-4 mt-auto transition text-sm sm:text-base">Mulai rekomendasi AI</button>
+            <button className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg py-2 px-4 mt-auto transition text-sm sm:text-base">
+              Mulai rekomendasi AI
+            </button>
           </div>
         </div>
-
 
         {/* Search & Filter */}
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-3 sm:p-4 mb-6 flex flex-col gap-3">
@@ -101,7 +82,12 @@ export default function CalonDashboard() {
             <svg className="w-4 h-4 absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
-            <input type="text" placeholder="Cari perusahaan..." className="w-full pl-9 sm:pl-10 pr-12 py-2.5 text-sm text-gray-800 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 placeholder-gray-400" disabled />
+            <input
+              type="text"
+              placeholder="Cari perusahaan..."
+              className="w-full pl-9 sm:pl-10 pr-12 py-2.5 text-sm text-gray-800 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 placeholder-gray-400"
+              disabled
+            />
             <button className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center hover:bg-indigo-700 transition" disabled>
               <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -118,7 +104,7 @@ export default function CalonDashboard() {
 
         {/* Grid Card Perusahaan */}
         <div className="mb-8">
-          {loading ? (
+          {loadingCompanies ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {[...Array(6)].map((_, i) => (
                 <div key={i} className="bg-white rounded-2xl border border-gray-100 p-5 h-48 animate-pulse" />
@@ -135,13 +121,20 @@ export default function CalonDashboard() {
               ))}
             </div>
           )}
+
           {/* Pagination dummy */}
           <div className="flex justify-center items-center gap-2 mt-6">
-            <button className="w-8 h-8 rounded-full border border-gray-200 text-gray-400" disabled>{'<'}</button>
-            {[1,2,3,4,5].map((n) => (
-              <button key={n} className={`w-8 h-8 rounded-full border ${n===1?"bg-indigo-600 text-white border-indigo-600":"border-gray-200 text-gray-600"}`} disabled>{n}</button>
+            <button className="w-8 h-8 rounded-full border border-gray-200 text-gray-400" disabled>{"<"}</button>
+            {[1, 2, 3, 4, 5].map((n) => (
+              <button
+                key={n}
+                className={`w-8 h-8 rounded-full border ${n === 1 ? "bg-indigo-600 text-white border-indigo-600" : "border-gray-200 text-gray-600"}`}
+                disabled
+              >
+                {n}
+              </button>
             ))}
-            <button className="w-8 h-8 rounded-full border border-gray-200 text-gray-400" disabled>{'>'}</button>
+            <button className="w-8 h-8 rounded-full border border-gray-200 text-gray-400" disabled>{">"}</button>
           </div>
         </div>
 
@@ -162,7 +155,6 @@ export default function CalonDashboard() {
           </div>
         </div>
 
-        
       </main>
     </div>
   );
