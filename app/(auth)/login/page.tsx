@@ -120,7 +120,15 @@ export default function LoginPage() {
 
         {/* ===== RIGHT PANEL ===== */}
         <div className="flex-1 bg-white rounded-2xl px-8 py-10 flex flex-col justify-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-1">Masuk</h2>
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="text-2xl font-bold text-gray-900">Masuk</h2>
+            <Link
+              href="/"
+              className="text-xs font-medium text-gray-400 hover:text-indigo-600 transition"
+            >
+              ← Kembali ke Beranda
+            </Link>
+          </div>
           <p className="text-gray-400 text-sm mb-6">
             Pilih jenis akun lalu isi data untuk melanjutkan.
           </p>
