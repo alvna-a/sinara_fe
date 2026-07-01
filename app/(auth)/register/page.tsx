@@ -134,10 +134,11 @@ export default function RegisterPage() {
             })}
           </div>
 
-          <p className="text-indigo-300 text-xs">
+          <p className="hidden md:block text-indigo-300 text-xs">
             © 2026 SINARA · Politeknik Negeri Semarang
           </p>
         </div>
+        
 
         {/* Right Panel */}
         <div className="flex-1 px-8 py-10 flex flex-col justify-center">
@@ -190,25 +191,17 @@ export default function RegisterPage() {
                 </p>
 
                 <form onSubmit={handleStep1} className="flex flex-col gap-4">
-                  <div className="relative">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-sm font-medium text-gray-700">Nama Lengkap</label>
                     <input
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Buat kata sandi"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      type="text"
+                      placeholder="Masukkan nama lengkap"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
                       required
-                      className="w-full px-4 py-2.5 pr-12 border border-gray-200 rounded-xl text-sm ..."
+                      className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    >
-                      {/* pakai icon Eye/EyeOff dari lucide-react — sudah di-import di profil calon/alumni */}
-                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
                   </div>
-
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="flex flex-col gap-1.5">
                       <label className="text-sm font-medium text-gray-700">NIM</label>
@@ -374,6 +367,9 @@ export default function RegisterPage() {
             )}
           </div>
         </div>
+        <p className="md:hidden text-center text-gray-400 text-xs py-4 border-t border-gray-100">
+          © 2026 SINARA · Politeknik Negeri Semarang
+        </p>
       </div>
     </div>
   );
