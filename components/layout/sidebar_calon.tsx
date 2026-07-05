@@ -21,7 +21,8 @@ const sidebarLinks = [
 
 export default function SidebarCalon() {
   const pathname = usePathname();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(false); // drawer mobile
+  const [desktopOpen, setDesktopOpen] = useState(true); // sidebar desktop
 
   return (
     <>
@@ -33,6 +34,17 @@ export default function SidebarCalon() {
         {open ? <X size={20} /> : <Menu size={20} />}
       </button>
 
+      {/* Desktop: tombol untuk membuka lagi sidebar saat sedang disembunyikan */}
+      {!desktopOpen && (
+        <button
+          aria-label="Buka sidebar"
+          className="hidden md:flex fixed top-4 left-4 z-50 bg-white border border-gray-200 rounded-lg p-2 shadow-sm"
+          onClick={() => setDesktopOpen(true)}
+        >
+          <Menu size={20} />
+        </button>
+      )}
+
       {/* Overlay */}
       {open && (
         <div
@@ -43,10 +55,11 @@ export default function SidebarCalon() {
 
       <aside
         className={`h-screen w-60 bg-white border-r border-gray-100 flex flex-col fixed left-0 top-0 z-40 transition-transform duration-200
-          ${open ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}
+          ${open ? "translate-x-0" : "-translate-x-full"}
+          ${desktopOpen ? "md:translate-x-0" : "md:-translate-x-full"}`}
       >
         {/* Logo */}
-        <div className="px-5 h-16 flex items-center border-b border-gray-100">
+        <div className="px-5 h-16 flex items-center justify-between border-b border-gray-100">
           <Link
             href="/dashboard_calon"
             className="flex items-center gap-2 font-bold text-xl text-blue-600"
@@ -54,6 +67,13 @@ export default function SidebarCalon() {
             <img src="/logo.png" alt="Sinara" className="h-8 w-8 object-contain" />
             <span>Sinara</span>
           </Link>
+          <button
+            aria-label="Sembunyikan sidebar"
+            className="hidden md:flex p-1.5 rounded-lg text-gray-400 hover:bg-gray-50 hover:text-blue-600 transition-colors duration-200"
+            onClick={() => setDesktopOpen(false)}
+          >
+            <Menu size={18} />
+          </button>
         </div>
 
         {/* Nav Links */}
