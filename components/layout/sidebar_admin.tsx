@@ -19,12 +19,13 @@ const sidebarLinks = [
   { label: "Review Feedback", href: "/review_feedback", icon: ClipboardCheck },
   { label: "Kelola Perusahaan", href: "/kelola_perusahaan", icon: Building2 },
   { label: "Data Mahasiswa", href: "/data_mahasiswa", icon: Users },
-  { label: "Profil", href: "/profil_admin",  icon: User },
+  { label: "Profil", href: "/profil_admin", icon: User },
 ];
 
 export default function SidebarAdmin() {
   const pathname = usePathname();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(false); // drawer mobile
+  const [desktopOpen, setDesktopOpen] = useState(true); // sidebar desktop
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -45,14 +46,35 @@ export default function SidebarAdmin() {
         {open ? <X size={20} /> : <Menu size={20} />}
       </button>
 
+      {/* Desktop: tombol untuk membuka lagi sidebar saat sedang disembunyikan */}
+      {!desktopOpen && (
+        <button
+          aria-label="Buka sidebar"
+          className="hidden md:flex fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-sm border border-gray-100"
+          onClick={() => setDesktopOpen(true)}
+        >
+          <Menu size={20} />
+        </button>
+      )}
+
       {/* Desktop sidebar */}
-    <aside className="hidden md:flex h-screen w-60 bg-white border-r border-gray-100 flex-col fixed left-0 top-0 z-40">
+      <aside
+        className={`hidden md:flex h-screen w-60 bg-white border-r border-gray-100 flex-col fixed left-0 top-0 z-40 transition-transform duration-300
+          ${desktopOpen ? "translate-x-0" : "-translate-x-full"}`}
+      >
         {/* Logo */}
-        <div className="px-5 h-16 flex items-center border-b border-gray-100">
+        <div className="px-5 h-16 flex items-center justify-between border-b border-gray-100">
           <Link href="/admin/dashboard" className="flex items-center gap-2 font-bold text-xl text-blue-600">
             <img src="/logo.png" alt="Sinara" className="h-8 w-8 object-contain" />
             <span>Sinara</span>
           </Link>
+          <button
+            aria-label="Sembunyikan sidebar"
+            className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-50 hover:text-blue-600 transition-colors duration-200"
+            onClick={() => setDesktopOpen(false)}
+          >
+            <Menu size={18} />
+          </button>
         </div>
 
         {/* Nav Links */}

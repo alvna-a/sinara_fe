@@ -3,7 +3,6 @@ import Link from "next/link";
 const footerLinks = [
   { label: "Beranda", href: "/" },
   { label: "Panduan Sistem", href: "/panduan" },
-  { label: "Fitur", href: "/#fitur" },
   { label: "Contact", href: "/#contact" },
   { label: "FAQs", href: "/faqs" },
 ];
