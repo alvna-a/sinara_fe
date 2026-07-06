@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, BookOpen, Clock3, LayoutDashboard, Star, UserCheck, MessageSquare } from "lucide-react";
+import { ArrowRight, BookOpen, Clock3, LayoutDashboard, Star, UserCheck, MessageSquare, ChevronRight, Plus } from "lucide-react";
 import SidebarAlumni from "@/components/layout/sidebar_alumni";
 import DashboardNavbar from "@/components/layout/dashboard_navbar";
 import MiniFooter from "@/components/layout/mini_footer";
@@ -52,64 +52,6 @@ const STATS = [
   },
 ];
 
-// ─── Ilustrasi SVG karakter ───────────────────────────────────────────────────
-
-function IllustrationCharacter() {
-  return (
-    <svg
-      width="130"
-      height="140"
-      viewBox="0 0 130 140"
-      fill="none"
-      aria-hidden="true"
-      className="shrink-0"
-    >
-      {/* Panel biru tempat bersandar */}
-      <rect x="18" y="95" width="94" height="38" rx="9" fill="#4338CA" />
-      <path d="M28 109h74M28 119h46" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-
-      {/* Tangan kiri & kanan */}
-      <path d="M32 96 Q22 88 25 75" stroke="#C9956A" strokeWidth="7.5" strokeLinecap="round" fill="none" />
-      <path d="M98 96 Q108 88 105 75" stroke="#C9956A" strokeWidth="7.5" strokeLinecap="round" fill="none" />
-
-      {/* Badan jas */}
-      <path d="M42 93 Q45 68 65 66 Q85 68 88 93Z" fill="#6366F1" />
-      {/* Kemeja putih tengah */}
-      <path d="M60 66 L65 83 L70 66" fill="white" />
-
-      {/* Leher */}
-      <rect x="60" y="57" width="10" height="11" rx="5" fill="#C9956A" />
-
-      {/* Kepala */}
-      <ellipse cx="65" cy="46" rx="19" ry="20" fill="#C9956A" />
-
-      {/* Rambut atas */}
-      <path
-        d="M46 43 Q47 24 65 23 Q83 24 84 43 Q80 35 73 34 Q65 33 57 34 Q50 35 46 43Z"
-        fill="#2C1810"
-      />
-      {/* Sisi rambut kiri */}
-      <path d="M46 43 Q44 51 47 56" stroke="#2C1810" strokeWidth="5.5" strokeLinecap="round" fill="none" />
-      {/* Sisi rambut kanan */}
-      <path d="M84 43 Q86 51 83 56" stroke="#2C1810" strokeWidth="5.5" strokeLinecap="round" fill="none" />
-
-      {/* Mata */}
-      <ellipse cx="57" cy="47" rx="2.5" ry="3" fill="#1E1009" />
-      <ellipse cx="73" cy="47" rx="2.5" ry="3" fill="#1E1009" />
-      {/* Kilap mata */}
-      <circle cx="58.2" cy="45.8" r="0.9" fill="white" />
-      <circle cx="74.2" cy="45.8" r="0.9" fill="white" />
-
-      {/* Alis */}
-      <path d="M54 43 Q57 41.5 60 43" stroke="#2C1810" strokeWidth="1.6" strokeLinecap="round" fill="none" />
-      <path d="M70 43 Q73 41.5 76 43" stroke="#2C1810" strokeWidth="1.6" strokeLinecap="round" fill="none" />
-
-      {/* Mulut senyum */}
-      <path d="M61 55 Q65 58.5 69 55" stroke="#A0614A" strokeWidth="1.6" strokeLinecap="round" fill="none" />
-    </svg>
-  );
-}
-
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function DashboardAlumniPage() {
@@ -119,8 +61,8 @@ export default function DashboardAlumniPage() {
       <DashboardNavbar pageTitle="Dashboard Utama" userName={USER_NAME} userRole="alumni" />
 
       {/* Offset sidebar (w-60) dan navbar (h-16) */}
-      <main className="md:ml-60 pt-16 px-4 sm:px-6 lg:px-8 pb-10">
-        <div className="max-w-5xl mx-auto space-y-5 py-6">
+      <main className="md:ml-60 pt-16 px-4 sm:px-6 lg:px-10 pb-10">
+        <div className="max-w-6xl mx-auto space-y-5 py-6">
 
           {/* ── 1. Welcome Banner ─────────────────────────────────────────── */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 sm:p-8">
@@ -137,11 +79,18 @@ export default function DashboardAlumniPage() {
                 </p>
               </div>
 
-              {/* Kanan: progress */}
-              <div className="sm:w-56 shrink-0">
+              {/* Kanan: progress — klik untuk ke halaman Profil */}
+              <Link
+                href="/profil_alumni"
+                className="sm:w-56 shrink-0 group rounded-xl -m-2 p-2 transition-colors hover:bg-indigo-50/60 cursor-pointer"
+              >
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-medium text-gray-500">
+                  <span className="text-xs font-medium text-gray-500 group-hover:text-indigo-600 transition-colors inline-flex items-center gap-1">
                     Status kelengkapan profil
+                    <ChevronRight
+                      size={13}
+                      className="opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all"
+                    />
                   </span>
                   <span className="text-xs font-bold text-indigo-600">
                     {PROFILE_COMPLETENESS}%
@@ -153,7 +102,7 @@ export default function DashboardAlumniPage() {
                     style={{ width: `${PROFILE_COMPLETENESS}%` }}
                   />
                 </div>
-              </div>
+              </Link>
             </div>
           </div>
 
@@ -215,35 +164,49 @@ export default function DashboardAlumniPage() {
           </div>
 
           {/* ── 3. CTA Banner ─────────────────────────────────────────────── */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 sm:p-8 flex flex-col sm:flex-row items-center gap-6 sm:gap-10">
+          <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm p-6 sm:p-10">
+            <div className="grid gap-8 items-center lg:grid-cols-[1.3fr_1fr]">
 
-            {/* Kiri: konten */}
-            <div className="flex-1 min-w-0 flex flex-col items-center sm:items-start text-center sm:text-left">
-              <div className="w-16 h-16 rounded-2xl bg-indigo-50 flex items-center justify-center mb-4 shrink-0">
-                <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
-                  <path d="M14 5v18M5 14h18" stroke="#6366F1" strokeWidth="2.6" strokeLinecap="round" />
-                </svg>
+              {/* Kiri: konten */}
+              <div className="flex flex-col items-center text-center md:items-start md:text-left gap-5">
+                <div className="max-w-xl">
+                  <p className="text-sm font-semibold uppercase tracking-[0.24em] text-indigo-600">
+                    Bagikan pengalaman magang
+                  </p>
+                  <h2 className="mt-3 text-3xl sm:text-[2.5rem] font-bold tracking-[-0.03em] text-gray-900 leading-tight">
+                    Bagikan 
+                     <br />
+                    <span className="text-indigo-600">Pengalaman Magangmu</span>
+                  </h2>
+                  <p className="mt-4 text-sm sm:text-base text-gray-500 leading-7">
+                    Bantu mahasiswa lain memilih magang yang tepat dengan ulasan tentang perusahaan, tugas, dan lingkungan kerja.
+                  </p>
+                </div>
+
+                <Link
+                  href="/input_feedback"
+                  className="inline-flex items-center justify-center gap-4 rounded-full bg-indigo-600 px-6 py-4 text-base font-semibold text-white shadow-2xl shadow-indigo-200/30 transition duration-200 hover:bg-indigo-700 active:scale-[0.98]"
+                >
+                  <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white/15 text-white">
+                    <Plus size={18} />
+                  </span>
+                  <span>Tambah Pengalaman Magang</span>
+                  <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white/15 text-white">
+                    <ArrowRight size={18} />
+                  </span>
+                </Link>
               </div>
 
-              <h3 className="text-lg font-bold text-gray-900 mb-2">
-                Bagikan Pengalaman Magangmu
-              </h3>
-              <p className="text-sm text-gray-500 leading-relaxed mb-5 max-w-xs">
-                Bantu mahasiswa lain dengan memberikan ulasan magangmu di perusahaan sebelumnya.
-              </p>
-
-              <Link
-                href="/input_feedback"
-                className="inline-flex items-center gap-2.5 px-5 py-3 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-sm font-bold rounded-xl transition-all shadow-sm shadow-indigo-200"
-              >
-                Tambah Pengalaman Magang Sekarang
-                <ArrowRight size={17} />
-              </Link>
-            </div>
-
-            {/* Kanan: ilustrasi karakter — hidden di mobile */}
-            <div className="hidden sm:flex items-end shrink-0">
-              <IllustrationCharacter />
+              {/* Kanan: ilustrasi — hidden di mobile */}
+              <div className="hidden sm:flex justify-end">
+                <div className="w-full max-w-[440px]">
+                  <img
+                    src="/alumni/card.png"
+                    alt="Ilustrasi bagikan pengalaman magang"
+                    className="w-full h-auto object-contain"
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
