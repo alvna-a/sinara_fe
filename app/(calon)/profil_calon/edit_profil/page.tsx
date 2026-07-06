@@ -13,6 +13,15 @@ import { useProfile } from "@/hooks/useProfile";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
+// ─── Opsi dropdown ────────────────────────────────────────────────────────────
+
+const PROGRAM_STUDI_OPTIONS = [
+  "D3 Teknik Informatika",
+  "D4 Teknologi Rekayasa Komputer",
+];
+
+const SEMESTER_OPTIONS = ["1", "2", "3", "4", "5", "6", "7", "8"];
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface EditableFields {
@@ -450,18 +459,14 @@ export default function EditProfilCalonPage() {
                 name="program_studi"
                 value={formData.program_studi}
                 onChange={handleInputChange}
-                options={[
-                  "D3 Teknik Informatika",
-                  "D4 Teknik Informatika",
-                  "D3 Sistem Informasi",
-                ]}
+                options={PROGRAM_STUDI_OPTIONS}
               />
               <InputField
                 label="Semester"
                 name="semester"
                 value={formData.semester}
                 onChange={handleInputChange}
-                options={["1", "2", "3", "4", "5", "6"]}
+                options={SEMESTER_OPTIONS}
               />
             </div>
 
