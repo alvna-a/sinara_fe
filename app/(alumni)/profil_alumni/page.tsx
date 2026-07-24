@@ -4,9 +4,6 @@
 //               POST /api/profile (save)
 import { useState, useRef } from "react";
 import { Camera, Pencil, Save, X } from "lucide-react";
-import SidebarAlumni from "@/components/layout/sidebar_alumni";
-import DashboardNavbar from "@/components/layout/dashboard_navbar";
-import MiniFooter from "@/components/layout/mini_footer";
 import { useProfile } from "../../../hooks/useProfile";
 
 interface EditableFields {
@@ -63,17 +60,14 @@ export default function ProfilAlumniPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#EEF2FF] flex items-center justify-center">
+      <div className="flex items-center justify-center py-20">
         <div className="text-indigo-400 text-sm animate-pulse">Memuat profil...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#EEF2FF]">
-      <SidebarAlumni />
-      <DashboardNavbar pageTitle="Profil Saya" userName={profile.name} userRole="alumni" />
-      <main className="md:ml-60 pt-16 px-4 sm:px-6 lg:px-8 pb-10">
+    <>
         <div className="max-w-3xl mx-auto space-y-5 py-6">
 
           {/* Card Profil */}
@@ -225,9 +219,7 @@ export default function ProfilAlumniPage() {
             </p>
           </div>
 
-          <MiniFooter />
         </div>
-      </main>
-    </div>
+    </>
   );
 }

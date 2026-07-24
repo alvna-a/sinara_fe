@@ -180,7 +180,7 @@ export function Step2DetailMagang({ data, onChange, onNext, onBack }: Props) {
                   key={l}
                   type="button"
                   onClick={() => addLocation(l)}
-                  className="px-3 py-1.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100 hover:bg-indigo-100 transition-colors"
+                  className="px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200 transition-colors"
                 >
                   {l}
                 </button>

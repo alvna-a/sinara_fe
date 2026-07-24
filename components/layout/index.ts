@@ -1,7 +1,7 @@
 export { default as PublicNavbar } from "./public_navbar";
 export { default as PublicFooter } from "./public_footer";
 export { default as MiniFooter } from "./mini_footer";
-export { default as DashboardNavbar } from "./dashboard_navbar";
+export { default as DashboardHeader } from "./header";
 export { default as SidebarAlumni } from "./sidebar_alumni";
 export { default as SidebarCalon } from "./sidebar_calon";
 export { default as SidebarAdmin } from "./sidebar_admin";

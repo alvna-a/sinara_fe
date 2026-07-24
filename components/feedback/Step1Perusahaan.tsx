@@ -143,7 +143,7 @@ export default function Step1Perusahaan({ data, onChange, onNext }: Step1Props) 
                       onChange({ ...data, divisi: opt.name });
                       setShowDivisiDropdown(false);
                     }}
-                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition"
+                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-800 transition"
                   >
                     <span className="font-medium">{opt.name}</span>
                     {opt.company && (

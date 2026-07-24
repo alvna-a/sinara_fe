@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Pagination from "@/components/ui/pagination";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface Division {
@@ -169,7 +170,8 @@ export default function PerusahaanPage() {
     setLoading(true);
     setError(null);
 
-    const params = new URLSearchParams({ page: String(page) });
+    const perPage = 30;
+    const params = new URLSearchParams({ page: String(page), per_page: String(perPage) });
     if (search)                        params.set("search", search);
     if (lokasi !== "Lokasi")           params.set("kota", lokasi);
     if (lowongan !== "Semua Lowongan") params.set("divisi", lowongan);
@@ -181,8 +183,26 @@ export default function PerusahaanPage() {
     fetch(`${API_BASE}/companies?${params}`, { signal: controller.signal })
       .then((r) => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); })
       .then((json) => {
-        setCompanies(json.data ?? []);
-        setMeta(json.meta ?? { current_page: 1, last_page: 1, total: 0 });
+        const list = json.data ?? [];
+
+        // If API provides meta, use server-side pagination data
+        if (json.meta || json.current_page || json.last_page || json.total) {
+          setCompanies(list);
+          setMeta({
+            current_page: json.meta?.current_page ?? json.current_page ?? page,
+            last_page: json.meta?.last_page ?? json.last_page ?? 1,
+            total: json.meta?.total ?? json.total ?? list.length,
+          });
+          return;
+        }
+
+        // Fallback: API returned full list without pagination -> paginate on client
+        const total = list.length;
+        const last_page = Math.max(1, Math.ceil(total / perPage));
+        const start = (page - 1) * perPage;
+        const paged = list.slice(start, start + perPage);
+        setCompanies(paged);
+        setMeta({ current_page: page, last_page, total });
       })
       .catch((err) => { if (err.name !== "AbortError") setError("Gagal memuat data. Coba lagi."); })
       .finally(() => setLoading(false));
@@ -258,12 +278,8 @@ export default function PerusahaanPage() {
 
         {/* Pagination */}
         {!loading && meta.last_page > 1 && (
-          <div className="flex justify-center items-center gap-2 mt-8">
-            <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}
-              className="px-4 py-2 text-sm rounded-xl border border-gray-200 text-gray-600 hover:border-indigo-300 disabled:opacity-40 disabled:cursor-not-allowed">← Sebelumnya</button>
-            <span className="text-sm text-gray-500">Halaman {meta.current_page} dari {meta.last_page}</span>
-            <button onClick={() => setPage((p) => Math.min(meta.last_page, p + 1))} disabled={page === meta.last_page}
-              className="px-4 py-2 text-sm rounded-xl border border-gray-200 text-gray-600 hover:border-indigo-300 disabled:opacity-40 disabled:cursor-not-allowed">Selanjutnya →</button>
+          <div className="mt-8">
+            <Pagination currentPage={page} totalPages={meta.last_page} onPageChange={setPage} />
           </div>
         )}
       </div>

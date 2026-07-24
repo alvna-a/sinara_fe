@@ -133,7 +133,7 @@ export default function Step2Skill({ data, onChange, onNext, onBack }: Step2Prop
                         key={s}
                         type="button"
                         onClick={() => { toggleSkill(s); setShowSuggestions(false); setNewSkill(""); }}
-                        className="w-full text-left px-2 py-1.5 text-xs text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 rounded-md transition"
+                        className="w-full text-left px-2 py-1.5 text-xs text-gray-700 hover:bg-gray-100 hover:text-gray-800 rounded-md transition"
                       >
                         {s}
                       </button>

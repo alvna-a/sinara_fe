@@ -2,9 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import SidebarCalon from "@/components/layout/sidebar_calon";
-import DashboardNavbar from "@/components/layout/dashboard_navbar";
-import MiniFooter from "@/components/layout/mini_footer";
 import { Building2, MapPin, CheckCircle2, AlertCircle, Clock } from "lucide-react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
@@ -162,10 +159,7 @@ export default function HasilRekomendasiSessionPage() {
 
   return (
     <div className="min-h-screen bg-[#EEF2FF]">
-      <SidebarCalon />
-      <DashboardNavbar pageTitle="Hasil Rekomendasi Magang" userName="" userRole="calon" />
-      <main className="md:ml-60 pt-16 px-4 sm:px-6 lg:px-8 pb-10">
-        <div className="max-w-4xl mx-auto space-y-5 py-6">
+      <div className="max-w-4xl mx-auto space-y-5 py-6">
 
           {/* Header */}
           <div>
@@ -232,9 +226,7 @@ export default function HasilRekomendasiSessionPage() {
             ← Kembali ke Riwayat
           </button>
 
-          <MiniFooter />
         </div>
-      </main>
     </div>
   );
 }

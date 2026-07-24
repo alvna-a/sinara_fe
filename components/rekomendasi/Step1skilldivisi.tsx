@@ -3,10 +3,13 @@
 // ─── components/rekomendasi/Step1SkillDivisi.tsx
 // Step 1: Input Passion/Minat Divisi + Skill yang dimiliki (maks 3 divisi)
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { X, Search } from "lucide-react";
 
-// ── Types ──────────────────────────────────────────────────────────────────────
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
+
+// ── Types ────────────────────────────────────────────────────────────
 export interface Step1Data {
   divisions: string[]; // maks 3
   skills: string[];
@@ -18,20 +21,7 @@ interface Props {
   onNext: () => void;
 }
 
-// ── Suggestion data ────────────────────────────────────────────────────────────
-const DIVISION_SUGGESTIONS = [
-  "Product Design Intern",
-  "Frontend Intern",
-  "Backend Intern",
-  "UIUX Design Intern",
-  "Mobile Developer Intern",
-  "Data Analyst Intern",
-  "DevOps Intern",
-  "QA Engineer Intern",
-  "Marketing Digital Intern",
-  "Business Analyst Intern",
-];
-
+// ── Skill suggestion data (statis, tetap sama seperti sebelumnya) ─────
 const SKILL_SUGGESTIONS = [
   "HTML", "CSS", "JavaScript", "TypeScript", "React", "Next.js", "Vue",
   "Node.js", "Laravel", "PHP", "Python", "SQL", "MySQL", "PostgreSQL",
@@ -41,26 +31,33 @@ const SKILL_SUGGESTIONS = [
   "MongoDB", "REST API", "GraphQL", "Tailwind CSS",
 ];
 
-// ── Helpers ────────────────────────────────────────────────────────────────────
+// ── Helpers ─────────────────────────────────────────────────────────
 function Tag({
   label,
   onRemove,
   variant = "selected",
+  category = "skill",
 }: {
   label: string;
   onRemove?: () => void;
   variant?: "selected" | "suggestion";
+  category?: "skill" | "division";
 }) {
+  const colorClass =
+    category === "division"
+      ? "bg-cyan-100 text-cyan-700 border-cyan-200 hover:text-cyan-900"
+      : "bg-indigo-100 text-indigo-700 border-indigo-200 hover:text-indigo-900";
   if (variant === "suggestion") {
     return (
       <button
         type="button"
-        className="px-3 py-1.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100 hover:bg-indigo-100 transition-colors"
+        className="px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200 transition-colors"
       >
         {label}
       </button>
     );
   }
+
   return (
     <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700 border border-indigo-200">
       {label}
@@ -77,16 +74,30 @@ function Tag({
   );
 }
 
-// ── Main Component ─────────────────────────────────────────────────────────────
+// ── Main Component ─────────────────────────────────────────────────
 export function Step1SkillDivisi({ data, onChange, onNext }: Props) {
   const [divisionQuery, setDivisionQuery] = useState("");
-  const [skillQuery, setSkillQuery]       = useState("");
-  const [errors, setErrors]               = useState<{ divisions?: string; skills?: string }>({});
+  const [skillQuery, setSkillQuery] = useState("");
+  const [errors, setErrors] = useState<{ divisions?: string; skills?: string }>({});
   const divInputRef = useRef<HTMLInputElement>(null);
   const skillInputRef = useRef<HTMLInputElement>(null);
 
-  // ── Division handlers ──────────────────────────────────────────────────────
-  const filteredDivisions = DIVISION_SUGGESTIONS.filter(
+  // ── Ambil daftar kategori divisi kanonik dari backend ───────────────
+  // Sumbernya sama persis dengan yang dipakai NLP buat filter kandidat,
+  // jadi apa pun yang dipilih user di sini DIJAMIN bisa match.
+  const [divisionOptions, setDivisionOptions] = useState<string[]>([]);
+  const [loadingDivisions, setLoadingDivisions] = useState(true);
+
+  useEffect(() => {
+    fetch(`${API_BASE}/divisions/categories`)
+      .then((res) => res.json())
+      .then((json) => setDivisionOptions(json.data ?? []))
+      .catch(() => setDivisionOptions([])) // gagal fetch -> kosongin, user tetap bisa lanjut tanpa suggestion
+      .finally(() => setLoadingDivisions(false));
+  }, []);
+
+  // ── Division handlers ──────────────────────────────────────────────
+  const filteredDivisions = divisionOptions.filter(
     (d) =>
       d.toLowerCase().includes(divisionQuery.toLowerCase()) &&
       !data.divisions.includes(d)
@@ -104,14 +115,27 @@ export function Step1SkillDivisi({ data, onChange, onNext }: Props) {
   const removeDivision = (div: string) =>
     onChange({ ...data, divisions: data.divisions.filter((d) => d !== div) });
 
+  // Enter cuma boleh nambah divisi kalau match PERSIS salah satu opsi
+  // kanonik (case-insensitive) -- bukan free-text bebas seperti sebelumnya.
+  // Ini yang nutup celah bug "generate ngarang/lambat" muncul lagi.
   const handleDivisionKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && divisionQuery.trim()) {
       e.preventDefault();
-      addDivision(divisionQuery.trim());
+      const match = divisionOptions.find(
+        (d) => d.toLowerCase() === divisionQuery.trim().toLowerCase()
+      );
+      if (match) {
+        addDivision(match); // pakai nama kanonik persis dari server
+      } else {
+        setErrors((e) => ({
+          ...e,
+          divisions: "Pilih divisi dari daftar yang tersedia.",
+        }));
+      }
     }
   };
 
-  // ── Skill handlers ─────────────────────────────────────────────────────────
+  // ── Skill handlers ──────────────────────────────────────────────────
   const filteredSkills = SKILL_SUGGESTIONS.filter(
     (s) =>
       s.toLowerCase().includes(skillQuery.toLowerCase()) &&
@@ -136,7 +160,7 @@ export function Step1SkillDivisi({ data, onChange, onNext }: Props) {
     }
   };
 
-  // ── Validation & next ──────────────────────────────────────────────────────
+  // ── Validation & next ────────────────────────────────────────────────
   const handleNext = () => {
     const newErrors: typeof errors = {};
     if (data.divisions.length === 0)
@@ -150,11 +174,10 @@ export function Step1SkillDivisi({ data, onChange, onNext }: Props) {
     onNext();
   };
 
-  // ── Render ─────────────────────────────────────────────────────────────────
+  // ── Render ────────────────────────────────────────────────────────
   return (
     <div className="flex flex-col gap-6">
-
-      {/* ── Passion / Minat Divisi ──────────────────────────────────────── */}
+      {/* ── Passion / Minat Divisi ──────────────────────────────── */}
       <div>
         <label className="block text-sm font-semibold text-gray-800 mb-1.5">
           Passion atau Minat Divisi{" "}
@@ -176,8 +199,14 @@ export function Step1SkillDivisi({ data, onChange, onNext }: Props) {
             value={divisionQuery}
             onChange={(e) => setDivisionQuery(e.target.value)}
             onKeyDown={handleDivisionKeyDown}
-            placeholder={data.divisions.length < 3 ? "Ketik atau pilih divisi…" : "Maksimal 3 divisi"}
-            disabled={data.divisions.length >= 3}
+            placeholder={
+              loadingDivisions
+                ? "Memuat daftar divisi..."
+                : data.divisions.length < 3
+                ? "Ketik atau pilih divisi..."
+                : "Maksimal 3 divisi"
+            }
+            disabled={data.divisions.length >= 3 || loadingDivisions}
             className="flex-1 outline-none text-sm text-gray-800 placeholder-gray-400 bg-transparent disabled:cursor-not-allowed"
           />
           <span className="text-xs text-gray-400 shrink-0">Cari divisi</span>
@@ -203,22 +232,23 @@ export function Step1SkillDivisi({ data, onChange, onNext }: Props) {
         {data.divisions.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
             {data.divisions.map((d) => (
-              <Tag key={d} label={d} onRemove={() => removeDivision(d)} />
+              <Tag key={d} label={d} onRemove={() => removeDivision(d)} category="division" />
             ))}
           </div>
         )}
 
         {/* Suggestion pills (when no query) */}
-        {!divisionQuery && data.divisions.length < 3 && (
+        {!divisionQuery && data.divisions.length < 3 && divisionOptions.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-3 p-3 bg-white rounded-xl border border-gray-100">
-            {DIVISION_SUGGESTIONS.filter((d) => !data.divisions.includes(d))
+            {divisionOptions
+              .filter((d) => !data.divisions.includes(d))
               .slice(0, 6)
               .map((d) => (
                 <button
                   key={d}
                   type="button"
                   onClick={() => addDivision(d)}
-                  className="px-3 py-1.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100 hover:bg-indigo-100 transition-colors"
+                  className="px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200 transition-colors"
                 >
                   {d}
                 </button>
@@ -236,7 +266,7 @@ export function Step1SkillDivisi({ data, onChange, onNext }: Props) {
         </p>
       </div>
 
-      {/* ── Skill yang dimiliki ────────────────────────────────────────── */}
+      {/* ── Skill yang dimiliki ──────────────────────────────────── */}
       <div>
         <label className="block text-sm font-semibold text-gray-800 mb-1.5">
           Skill yang dimiliki{" "}
@@ -284,8 +314,9 @@ export function Step1SkillDivisi({ data, onChange, onNext }: Props) {
         <div className="flex flex-wrap gap-2 mt-3 p-3 bg-white rounded-xl border border-gray-100 min-h-13">
           {/* Selected */}
           {data.skills.map((s) => (
-            <Tag key={s} label={s} onRemove={() => removeSkill(s)} />
+            <Tag key={s} label={s} onRemove={() => removeSkill(s)} category="skill" />
           ))}
+
           {/* Suggestions */}
           {!skillQuery &&
             SKILL_SUGGESTIONS.filter((s) => !data.skills.includes(s))
@@ -295,7 +326,7 @@ export function Step1SkillDivisi({ data, onChange, onNext }: Props) {
                   key={s}
                   type="button"
                   onClick={() => addSkill(s)}
-                  className="px-3 py-1.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100 hover:bg-indigo-100 transition-colors"
+                  className="px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200 transition-colors"
                 >
                   {s}
                 </button>
@@ -313,7 +344,7 @@ export function Step1SkillDivisi({ data, onChange, onNext }: Props) {
         </p>
       </div>
 
-      {/* ── Footer ─────────────────────────────────────────────────────── */}
+      {/* ── Footer ─────────────────────────────────────────────── */}
       <div className="flex items-center justify-between pt-2 border-t border-gray-100">
         <p className="text-xs text-gray-500 max-w-xs">
           <span className="text-red-500 font-semibold">(*)</span> Form wajib diisi

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+
 interface Division {
   id: number;
   name: string;
@@ -32,6 +33,7 @@ interface CompanyDetail {
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
 function StarRating({ rating, size = "sm" }: { rating: number; size?: "sm" | "md" }) {
   const cls = size === "md" ? "w-5 h-5" : "w-4 h-4";
   return (
@@ -71,7 +73,9 @@ function DivisionCard({ div, companyId }: { div: Division; companyId: number }) 
           {div.total_testimoni} testimoni
         </span>
       </div>
+
       <p className="text-xs text-gray-500 leading-relaxed">{div.description}</p>
+
       <div className="flex items-center gap-3 text-xs text-gray-500">
         <span className="flex items-center gap-1">
           <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -81,11 +85,13 @@ function DivisionCard({ div, companyId }: { div: Division; companyId: number }) 
         </span>
         <StarRating rating={div.avg_rating} />
       </div>
+
       {div.highlight_quote && (
         <blockquote className="bg-indigo-50 rounded-xl px-4 py-3 text-xs text-gray-700 leading-relaxed italic">
           "{div.highlight_quote}"
         </blockquote>
       )}
+
       <Link href={`/perusahaan/${companyId}/divisi/${div.id}`}>
         <button className="w-full mt-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold py-2.5 rounded-xl transition">
           Lihat review divisi
@@ -114,6 +120,7 @@ function SkeletonDetail() {
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
+
 export default function DetailPerusahaanPage() {
   const params = useParams();
   const companyId = params.id as string;
@@ -121,19 +128,84 @@ export default function DetailPerusahaanPage() {
   const [company, setCompany] = useState<CompanyDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState<string | null>(null);
-  const [saved, setSaved]     = useState(false);
   const [showAll, setShowAll] = useState(false);
+
+  // ── Wishlist perusahaan ──
+  const [saved, setSaved]                     = useState(false);
+  const [isTogglingSaved, setIsTogglingSaved] = useState(false);
+  const [savedError, setSavedError]           = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
     setError(null);
-
     fetch(`${API_BASE}/companies/${companyId}`)
       .then((r) => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); })
       .then((json) => setCompany(json.data ?? json))
       .catch(() => setError("Gagal memuat data perusahaan."))
       .finally(() => setLoading(false));
   }, [companyId]);
+
+  // Cek status wishlist perusahaan ini (biar tombolnya langsung akurat)
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    if (!token || !companyId) return;
+
+    fetch(`${API_BASE}/wishlist/check/company/${companyId}`, {
+      headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => setSaved(Boolean(json?.data?.saved)))
+      .catch(() => {
+        // gagal cek status wishlist bukan error fatal, biarin default false
+      });
+  }, [companyId]);
+
+  // Toggle simpan/hapus wishlist perusahaan — POST buat nyimpen, DELETE buat ngapus
+  const handleToggleSaved = async () => {
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+
+    setIsTogglingSaved(true);
+    setSavedError(null);
+
+    try {
+      if (saved) {
+        const res = await fetch(`${API_BASE}/wishlist/company/${companyId}`, {
+          method: "DELETE",
+          headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err?.message ?? `Gagal menghapus dari wishlist (status ${res.status}).`);
+        }
+
+        setSaved(false);
+      } else {
+        const res = await fetch(`${API_BASE}/wishlist`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ company_id: Number(companyId) }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err?.message ?? `Gagal menyimpan ke wishlist (status ${res.status}).`);
+        }
+
+        setSaved(true);
+      }
+    } catch (err) {
+      console.error(err);
+      setSavedError(err instanceof Error ? err.message : "Gagal memproses wishlist.");
+    } finally {
+      setIsTogglingSaved(false);
+    }
+  };
 
   if (loading) return <div className="min-h-screen bg-[#F0F2FA] p-8"><SkeletonDetail /></div>;
   if (error)   return <div className="min-h-screen bg-[#F0F2FA] flex items-center justify-center"><p className="text-red-500 text-sm">{error}</p></div>;
@@ -144,7 +216,6 @@ export default function DetailPerusahaanPage() {
   return (
     <div className="min-h-screen bg-[#F0F2FA]">
       <div className="max-w-5xl mx-auto px-6 md:px-12 py-8">
-
         {/* ── Breadcrumb ── */}
         <nav className="flex items-center gap-2 text-sm text-gray-400 mb-6 flex-wrap">
           <Link href="/" className="hover:text-indigo-600 transition">Beranda</Link>
@@ -176,15 +247,23 @@ export default function DetailPerusahaanPage() {
                   </span>
                   <StarRating rating={company.avg_rating} size="md" />
                 </div>
-                <button onClick={() => setSaved(!saved)}
-                  className="mt-3 flex items-center gap-1.5 text-sm text-gray-500 hover:text-indigo-600 transition">
+
+                <button
+                  onClick={handleToggleSaved}
+                  disabled={isTogglingSaved}
+                  className="mt-3 flex items-center gap-1.5 text-sm text-gray-500 hover:text-indigo-600 transition disabled:opacity-50"
+                >
                   <svg className={`w-4 h-4 ${saved ? "fill-indigo-600 text-indigo-600" : "fill-none"}`} stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
                   </svg>
-                  {saved ? "Tersimpan" : "Simpan"}
+                  {isTogglingSaved ? "Memproses..." : saved ? "Tersimpan" : "Simpan"}
                 </button>
+                {savedError && (
+                  <p className="text-xs text-red-500 mt-1">{savedError}</p>
+                )}
               </div>
             </div>
+
             <div className="flex flex-col gap-3 md:w-44 flex-shrink-0">
               <div className="bg-indigo-50 rounded-xl p-4">
                 <p className="text-xs text-gray-500 mb-1">Total review</p>
@@ -210,8 +289,10 @@ export default function DetailPerusahaanPage() {
 
         {company.divisions.length > 4 && (
           <div className="flex justify-center mt-6">
-            <button onClick={() => setShowAll(!showAll)}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-8 py-3 rounded-full transition">
+            <button
+              onClick={() => setShowAll(!showAll)}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-8 py-3 rounded-full transition"
+            >
               {showAll ? "Sembunyikan" : "Lihat lainnya"}
             </button>
           </div>

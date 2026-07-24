@@ -1,7 +1,7 @@
 "use client";
 // hooks/useProfile.ts
-// Hook shared untuk profil calon & alumni — sync ke BE
-// Endpoint: GET /api/me, GET /api/profile, POST /api/profile
+// Hook shared untuk profil calon & alumni --- sync ke BE
+// Endpoint: GET /api/me, GET /api/profile, POST /api/profile, PUT /api/account
 import { useState, useEffect, useCallback } from "react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
@@ -38,7 +38,10 @@ const DEFAULT: UserProfile = {
   kelengkapan_profil: 0,
 };
 
-function calcKelengkapan(user: Record<string, unknown>, profile: Record<string, unknown>): number {
+function calcKelengkapan(
+  user: Record<string, unknown>,
+  profile: Record<string, unknown>,
+): number {
   const fields = [
     user?.name,
     user?.email,
@@ -69,19 +72,24 @@ export function useProfile() {
     try {
       const [resMe, resProfile] = await Promise.all([
         fetch(`${API_BASE}/me`, {
-          headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
+          },
         }),
         fetch(`${API_BASE}/profile`, {
-          headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
+          },
         }),
       ]);
-
       if (!resMe.ok) throw new Error("Sesi berakhir. Silakan login ulang.");
       const user = await resMe.json();
-      const profileJson = resProfile.ok ? await resProfile.json() : { data: {} };
-      const profileData =
-        profileJson?.data?.profile ?? profileJson?.data ?? {};
-
+      const profileJson = resProfile.ok
+        ? await resProfile.json()
+        : { data: {} };
+      const profileData = profileJson?.data?.profile ?? profileJson?.data ?? {};
       const photoUrl = profileData?.photo
         ? `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/storage/${profileData.photo}`
         : null;
@@ -111,11 +119,13 @@ export function useProfile() {
     fetchProfile();
   }, [fetchProfile]);
 
-  // Simpan perubahan profil ke BE
+  // Simpan perubahan profil (tabel user_profiles) ke BE
   const saveProfile = async (data: {
     phone?: string;
     program_studi?: string;
     semester?: string;
+    kelas?: string;
+    tahun_angkatan?: string | number;
     photoFile?: File | null;
   }): Promise<void> => {
     const token = localStorage.getItem("access_token");
@@ -127,11 +137,17 @@ export function useProfile() {
       if (data.program_studi !== undefined)
         body.append("program_studi", data.program_studi);
       if (data.semester !== undefined) body.append("semester", data.semester);
+      if (data.kelas !== undefined) body.append("kelas", data.kelas);
+      if (data.tahun_angkatan !== undefined)
+        body.append("tahun_angkatan", String(data.tahun_angkatan));
       if (data.photoFile) body.append("photo", data.photoFile);
 
       const res = await fetch(`${API_BASE}/profile`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
         body,
       });
       if (!res.ok) {
@@ -144,5 +160,41 @@ export function useProfile() {
     }
   };
 
-  return { profile, loading, error, isSaving, fetchProfile, saveProfile };
+  // Simpan perubahan nama & email (tabel users) ke BE
+  const saveAccount = async (data: {
+    name: string;
+    email: string;
+  }): Promise<void> => {
+    const token = localStorage.getItem("access_token");
+    if (!token) throw new Error("Token tidak ditemukan.");
+    setIsSaving(true);
+    try {
+      const res = await fetch(`${API_BASE}/account`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.message ?? `Error ${res.status}`);
+      }
+      await fetchProfile(); // re-fetch supaya data terbaru
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return {
+    profile,
+    loading,
+    error,
+    isSaving,
+    fetchProfile,
+    saveProfile,
+    saveAccount,
+  };
 }

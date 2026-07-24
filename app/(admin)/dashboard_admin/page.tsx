@@ -3,8 +3,6 @@
 import type { ReactNode } from "react";
 import { useState, useEffect } from "react";
 import { ArrowRight, CalendarDays, Building2, Users, MessageSquare } from "lucide-react";
-import SidebarAdmin from "@/components/layout/sidebar_admin";
-import DashboardNavbar from "@/components/layout/dashboard_navbar";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -186,37 +184,20 @@ export default function DashboardAdminPage() {
     : [];
 
   return (
-    <div className="min-h-screen bg-[#F3F5FB]">
-      <SidebarAdmin />
-      <DashboardNavbar pageTitle="Dashboard Utama" userName={userName} userRole="admin" />
-
-      <main className="md:ml-60 pt-16 px-4 sm:px-6 lg:px-8 pb-10">
+    <>
         <div className="mx-auto w-full max-w-[1280px] px-0 sm:px-2 lg:px-4 pb-12">
           <div className="space-y-6">
 
             {/* ── Welcome Banner ────────────────────────────────────────────── */}
             <div className="rounded-[32px] bg-[#f8fbff] p-6 shadow-sm shadow-slate-200/50 sm:p-8">
-              <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-                <div className="max-w-2xl">
-                  <h1 className="text-2xl sm:text-[1.75rem] font-bold text-slate-950 leading-snug flex flex-wrap items-center gap-2">
-                    Selamat Datang, Admin
-                    <span className="text-2xl" aria-hidden="true">👋</span>
-                  </h1>
-                  <p className="mt-2 max-w-xl text-sm text-slate-500">
-                    Review feedback tetap jadi prioritas utama karena data yang disetujui akan masuk ke data guna rekomendasi mahasiswa.
-                  </p>
-                </div>
-                <div className="flex items-center gap-4 rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/40 sm:p-5">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-[22px] bg-slate-100 text-slate-700">
-                    <span className="text-lg font-semibold">
-                      {userName.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
-                  <div>
-                    <p className="text-sm text-slate-500">Halo, {userName}</p>
-                    <p className="mt-1 text-lg font-semibold text-slate-950">Super Admin</p>
-                  </div>
-                </div>
+              <div className="max-w-2xl">
+                <h1 className="text-4xl sm:text-4xl font-bold text-slate-950 leading-snug flex flex-wrap items-center gap-2">
+                  Selamat Datang, Admin
+                  <span className="text-2xl" aria-hidden="true">👋</span>
+                </h1>
+                <p className="mt-2 max-w-xl text-base text-slate-500">
+                  Review feedback tetap jadi prioritas utama karena data yang disetujui akan masuk ke data guna rekomendasi mahasiswa.
+                </p>
               </div>
             </div>
 
@@ -226,7 +207,7 @@ export default function DashboardAdminPage() {
               {/* Summary Cards */}
               <div className="space-y-6 rounded-[32px] bg-white p-6 shadow-sm shadow-slate-200/50 sm:p-8">
                 <div className="space-y-4">
-                  <p className="text-base font-semibold text-slate-600">Ringkasan</p>
+                  <p className="text-xl font-semibold text-slate-600">Ringkasan</p>
                   <div className="grid gap-4 sm:grid-cols-2">
                     {loadingStats
                       ? [...Array(4)].map((_, i) => <SkeletonSummaryCard key={i} />)
@@ -244,8 +225,8 @@ export default function DashboardAdminPage() {
               <div className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm shadow-slate-200/50 sm:p-8">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <p className="text-base font-semibold text-slate-950">Aktivitas Terkini</p>
-                    <p className="mt-1 text-sm text-slate-500">Update terbaru dari sistem dan tugas admin.</p>
+                    <p className="text-xl font-semibold text-slate-950">Aktivitas Terkini</p>
+                    <p className="mt-1 text-base text-slate-500">Update terbaru dari sistem dan tugas admin.</p>
                   </div>
                   <button className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
                     Lihat Semua
@@ -269,8 +250,7 @@ export default function DashboardAdminPage() {
 
           </div>
         </div>
-      </main>
-    </div>
+    </>
   );
 }
 

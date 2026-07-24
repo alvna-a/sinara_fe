@@ -2,9 +2,6 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import SidebarAlumni from "@/components/layout/sidebar_alumni";
-import DashboardNavbar from "@/components/layout/dashboard_navbar";
-import MiniFooter from "@/components/layout/mini_footer";
 import { ArrowLeft } from "lucide-react";
 
 export default function DetailRiwayatPage() {
@@ -12,11 +9,7 @@ export default function DetailRiwayatPage() {
   const feedbackId = params.id as string;
 
   return (
-    <div className="min-h-screen bg-[#EEF2FF]">
-      <SidebarAlumni />
-      <DashboardNavbar pageTitle="Detail Feedback" userName="Arjuna" userRole="alumni" />
-
-      <main className="md:ml-60 pt-16 px-4 sm:px-6 lg:px-8 pb-10">
+    <>
         <div className="max-w-3xl mx-auto space-y-5 py-6">
           {/* Back Button */}
           <Link
@@ -61,9 +54,7 @@ export default function DetailRiwayatPage() {
             </div>
           </div>
 
-          <MiniFooter />
         </div>
-      </main>
-    </div>
+    </>
   );
 }

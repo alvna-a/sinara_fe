@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
-import { Menu, X } from "lucide-react";
+import { Menu, X, LayoutDashboard, LogOut, ChevronDown } from "lucide-react";
 import { ROLE_REDIRECT } from "@/app/constants/auth";
 
 const navLinks = [
@@ -22,6 +22,8 @@ export default function PublicNavbar() {
   } | null>(null);
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
@@ -34,10 +36,21 @@ export default function PublicNavbar() {
     }
   }, []);
 
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, []);
+
   const handleLogout = () => {
     localStorage.removeItem("access_token");
     localStorage.removeItem("user");
     setUser(null);
+    setMenuOpen(false);
     router.push("/login");
   };
 
@@ -77,22 +90,42 @@ export default function PublicNavbar() {
         {/* Desktop Auth */}
         <div className="hidden md:flex items-center gap-3">
           {user ? (
-            <>
+            <div className="relative" ref={menuRef}>
               <button
-                onClick={() => router.push(ROLE_REDIRECT[user.role])}
-                className="w-9 h-9 rounded-full bg-indigo-100 text-indigo-700 font-semibold flex items-center justify-center hover:bg-indigo-200 transition"
-                title={user.name}
+                onClick={() => setMenuOpen((s) => !s)}
+                className="flex items-center gap-2 rounded-full pl-1 pr-2 py-1 hover:bg-gray-50 transition-colors"
               >
-                {user.name.charAt(0).toUpperCase()}
+                <div className="w-9 h-9 rounded-full bg-indigo-100 text-indigo-700 font-semibold flex items-center justify-center">
+                  {user.name.charAt(0).toUpperCase()}
+                </div>
+                <span className="text-sm font-medium text-gray-700 max-w-[140px] truncate">
+                  {user.name}
+                </span>
+                <ChevronDown size={16} className={`text-gray-400 transition-transform ${menuOpen ? "rotate-180" : ""}`} />
               </button>
 
-              <button
-                onClick={handleLogout}
-                className="text-sm text-gray-600 hover:text-red-500"
-              >
-                Keluar
-              </button>
-            </>
+              {menuOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-1.5 z-40">
+                  <button
+                    onClick={() => {
+                      setMenuOpen(false);
+                      router.push(ROLE_REDIRECT[user.role]);
+                    }}
+                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-indigo-600 transition-colors"
+                  >
+                    <LayoutDashboard size={16} />
+                    Dashboard
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                  >
+                    <LogOut size={16} />
+                    Keluar
+                  </button>
+                </div>
+              )}
+            </div>
           ) : (
             <>
               <Link
