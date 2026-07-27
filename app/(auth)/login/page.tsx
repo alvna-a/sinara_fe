@@ -51,42 +51,61 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setLoading(true);
-  setError(null);
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
 
-  try {
-    const res = await apiPost("/login", { nim, password, role: selectedRole });
+    try {
+      const res = await apiPost("/login", { nim, password, role: selectedRole });
 
-    if (res.access_token) {
-  const actualRole = res.user?.role ?? selectedRole;
+      if (res.access_token) {
+        const actualRole = res.user?.role ?? selectedRole;
 
-    // Role tidak cocok → tolak login, jangan simpan token
-    if (actualRole !== selectedRole) {
-      const roleLabel: Record<string, string> = {
-        alumni: "Sudah Magang",
-        calon: "Akan Magang",
-        admin: "Admin",
-      };
-      setError(
-        `Akun ini terdaftar sebagai "${roleLabel[actualRole] ?? actualRole}". ` +
-        `Silakan pilih role yang sesuai.`
-      );
-      return;
+        // Role tidak cocok → tolak login, jangan simpan token.
+        // (Ini sudah benar sebelumnya: dicek SEBELUM localStorage/router.push,
+        // jadi tidak mungkin "kebablasan" masuk ke dashboard role lain.)
+        if (actualRole !== selectedRole) {
+          const roleLabel: Record<string, string> = {
+            alumni: "Sudah Magang",
+            calon: "Akan Magang",
+            admin: "Admin",
+          };
+          setError(
+            `Akun ini terdaftar sebagai "${roleLabel[actualRole] ?? actualRole}". ` +
+            `Silakan pilih role yang sesuai.`
+          );
+          return;
+        }
+
+        localStorage.setItem(TOKEN_KEY, res.access_token);
+        localStorage.setItem("user", JSON.stringify(res.user));
+        router.push(ROLE_REDIRECT[actualRole]);
+      } else {
+        setError(res.message || "Login gagal. Periksa NIM dan password.");
+      }
+    } catch (err: unknown) {
+      // ✅ FIX: sebelumnya `catch { setError("Tidak dapat terhubung ke server.") }`
+      // gak peduli apa isi err-nya, jadi NIM/password salah (401 dari BE, sudah
+      // berisi pesan "NIM atau password salah") ikut ketutup jadi pesan generik.
+      // apiPost() (lewat handleResponse di services/api.js) throw:
+      //   - objek JSON asli dari Laravel kalau response error tapi valid JSON
+      //     → { message: "NIM atau password salah" } untuk 401
+      //   - Error biasa kalau response bukan JSON sama sekali
+      //   - TypeError bawaan browser kalau fetch benar-benar gagal (server mati/CORS)
+      // Baru untuk kasus terakhir itu pesan "Tidak dapat terhubung ke server" relevan.
+      if (err instanceof TypeError) {
+        setError("Tidak dapat terhubung ke server.");
+      } else if (err && typeof err === "object" && "message" in err) {
+        setError(String((err as { message?: string }).message) || "Login gagal. Periksa NIM dan password.");
+      } else if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Tidak dapat terhubung ke server.");
+      }
+    } finally {
+      setLoading(false);
     }
-
-    localStorage.setItem(TOKEN_KEY, res.access_token);
-    localStorage.setItem("user", JSON.stringify(res.user));
-    router.push(ROLE_REDIRECT[actualRole]);
-  } else {
-    setError(res.message || "Login gagal. Periksa NIM dan password.");
-  }
-  } catch {
-    setError("Tidak dapat terhubung ke server.");
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4 py-10">
@@ -170,7 +189,7 @@ export default function LoginPage() {
                 </span>
                 <input
                   type="text"
-                  placeholder="Masukkan NIM"
+                  placeholder="Masukkan NIM (Tanpa titik atau spasi)"
                   value={nim}
                   onChange={(e) => setNim(e.target.value)}
                   required

@@ -41,3 +41,19 @@ export async function apiGet(endpoint, token) {
   });
   return handleResponse(res);
 }
+
+export async function apiDelete(endpoint, token) {
+  const headers = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  };
+
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  const res = await fetch(`${BASE_URL}${endpoint}`, {
+    method: 'DELETE',
+    headers,
+  });
+
+  return handleResponse(res);
+}

@@ -1,15 +1,14 @@
 "use client";
 // app/(calon)/profil_calon/page.tsx
 // Data dari: GET /api/me + GET /api/profile via useProfile hook
-
 import { Pencil } from "lucide-react";
 import Link from "next/link";
-import SidebarCalon from "@/components/layout/sidebar_calon";
-import MiniFooter from "@/components/layout/mini_footer";
 import { useProfile } from "@/hooks/useProfile";
-
+// NOTE: SidebarCalon & MiniFooter DIHAPUS dari sini.
+// app/(calon)/layout.tsx sudah render SidebarCalon + DashboardHeader + DashboardMain,
+// dan DashboardMain sendiri sudah render MiniFooter di bawahnya — kalau dipanggil
+// lagi di sini, footernya jadi dobel.
 // ─── Sub-components ────────────────────────────────────────────────────────────
-
 function Avatar({ photo, nama }: { photo: string | null; nama: string }) {
   if (photo) {
     return (
@@ -32,7 +31,6 @@ function Avatar({ photo, nama }: { photo: string | null; nama: string }) {
     </div>
   );
 }
-
 function ProfileCompletionBar({ value }: { value: number }) {
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 px-6 py-4 flex items-center gap-5">
@@ -51,7 +49,6 @@ function ProfileCompletionBar({ value }: { value: number }) {
     </div>
   );
 }
-
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-col gap-0.5">
@@ -64,7 +61,6 @@ function InfoRow({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
-
 function ProfileSkeleton() {
   return (
     <div className="animate-pulse flex flex-col gap-4 sm:gap-5 w-full">
@@ -94,130 +90,95 @@ function ProfileSkeleton() {
     </div>
   );
 }
-
 const statusMagangConfig = {
   "Belum Magang": {
     label: "Belum Magang",
-    className: "bg-amber-400 text-white text-xs font-semibold px-4 py-1.5 rounded-full",
+    className:
+      "bg-amber-400 text-white text-xs font-semibold px-4 py-1.5 rounded-full",
   },
   "Sedang Magang": {
     label: "Sedang Magang",
-    className: "bg-blue-500 text-white text-xs font-semibold px-4 py-1.5 rounded-full",
+    className:
+      "bg-blue-500 text-white text-xs font-semibold px-4 py-1.5 rounded-full",
   },
   "Selesai Magang": {
     label: "Selesai Magang",
-    className: "bg-emerald-500 text-white text-xs font-semibold px-4 py-1.5 rounded-full",
+    className:
+      "bg-emerald-500 text-white text-xs font-semibold px-4 py-1.5 rounded-full",
   },
 } as const;
-
 // ─── Main Page ──────────────────────────────────────────────────────────────────
-
 export default function ProfilCalonPage() {
   const { profile, loading, error } = useProfile();
-
   const statusKey =
-    (profile?.status_magang as keyof typeof statusMagangConfig) ?? "Belum Magang";
+    (profile?.status_magang as keyof typeof statusMagangConfig) ??
+    "Belum Magang";
   const status =
     statusMagangConfig[statusKey] ?? statusMagangConfig["Belum Magang"];
-
   return (
-    <div className="flex min-h-screen bg-[#EEF0F8]">
-      <SidebarCalon />
-      <main className="md:ml-60 flex-1 flex flex-col min-h-screen">
-
-        {/* ── Header ── */}
-        <header className="bg-white border-b border-gray-200 px-4 sm:px-6 md:px-8 py-3 sm:py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sticky top-0 z-10 pt-16 md:pt-4">
-          <div className="flex-1 min-w-0">
-            <h1 className="text-lg sm:text-xl font-bold text-gray-900">Profil Saya</h1>
-            <p className="text-xs sm:text-sm text-gray-600 mt-1">
-              Informasi akun dan data kontak calon magang.
-            </p>
-          </div>
-          {!loading && profile?.name && (
-            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-              <span className="text-xs sm:text-sm font-medium text-gray-700 truncate">
-                Halo, {profile.name.split(" ")[0]}
-              </span>
-              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center text-xs sm:text-sm font-bold text-white border-2 border-indigo-100 flex-shrink-0">
-                {profile.name
-                  .split(" ")
-                  .map((n) => n[0])
-                  .slice(0, 2)
-                  .join("")
-                  .toUpperCase()}
-              </div>
-            </div>
-          )}
-        </header>
-
-        {/* ── Content ── */}
-        <div className="flex-1 px-4 sm:px-6 md:px-8 py-5 sm:py-7 flex flex-col gap-4 sm:gap-5 w-full">
-
-          {/* Error global */}
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3">
-              {error}
-            </div>
-          )}
-
-          {loading ? (
-            <ProfileSkeleton />
-          ) : (
-            <>
-              {/* Card: Avatar + nama + tombol Edit */}
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6">
-                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 sm:gap-6">
-                  {/* Kiri: avatar + info */}
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-5 min-w-0">
-                    <div className="flex-shrink-0">
-                      <Avatar photo={profile.photo} nama={profile.name || "?"} />
-                    </div>
-                    <div className="flex flex-col gap-2 min-w-0">
-                      <h2 className="text-xl sm:text-2xl font-extrabold text-gray-900 leading-tight">
-                        {profile.name || "-"}
-                      </h2>
-                      <p className="text-xs sm:text-sm text-gray-500 font-medium">
-                        {profile.program_studi || "Program Studi"}
-                        {profile.kelas ? ` • ${profile.kelas}` : ""}
-                      </p>
-                      <span className={status.className}>{status.label}</span>
-                    </div>
-                  </div>
-
-                  {/* Kanan: tombol Edit */}
-                  <Link
-                    href="/profil_calon/edit_profil"
-                    className="flex items-center justify-center sm:justify-start gap-2 border border-gray-200 rounded-xl px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:border-blue-300 hover:text-blue-600 transition-all duration-200 shadow-sm whitespace-nowrap self-start"
-                  >
-                    <Pencil size={15} />
-                    Edit Profil
-                  </Link>
-                </div>
-              </div>
-
-              {/* Completion bar */}
-              <ProfileCompletionBar value={profile.kelengkapan_profil} />
-
-              {/* Card: Grid info detail */}
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-x-12 gap-y-4 sm:gap-y-6">
-                  <InfoRow label="NIM" value={profile.nim ?? "-"} />
-                  <InfoRow label="Email" value={profile.email || "-"} />
-                  <InfoRow label="Kelas" value={profile.kelas ?? "-"} />
-                  <InfoRow label="No. HP" value={profile.phone || "-"} />
-                  <InfoRow
-                    label="Tahun Angkatan"
-                    value={profile.tahun_angkatan ? String(profile.tahun_angkatan) : "-"}
-                  />
-                  <InfoRow label="Program Studi" value={profile.program_studi || "-"} />
-                </div>
-              </div>
-
-              <MiniFooter />
-            </>
-          )}
+    <div className="flex flex-col gap-4 sm:gap-5 w-full">
+      {/* Error global */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3">
+          {error}
         </div>
-      </main>
+      )}
+      {loading ? (
+        <ProfileSkeleton />
+      ) : (
+        <>
+          {/* Card: Avatar + nama + tombol Edit */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 sm:gap-6">
+              {/* Kiri: avatar + info */}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-5 min-w-0">
+                <div className="flex-shrink-0">
+                  <Avatar photo={profile.photo} nama={profile.name || "?"} />
+                </div>
+                <div className="flex flex-col gap-2 min-w-0">
+                  <h2 className="text-xl sm:text-2xl font-extrabold text-gray-900 leading-tight">
+                    {profile.name || "-"}
+                  </h2>
+                  <p className="text-xs sm:text-sm text-gray-500 font-medium">
+                    {profile.program_studi || "Program Studi"}
+                    {profile.kelas ? ` • ${profile.kelas}` : ""}
+                  </p>
+                  <span className={status.className}>{status.label}</span>
+                </div>
+              </div>
+              {/* Kanan: tombol Edit */}
+              <Link
+                href="/profil_calon/edit_profil"
+                className="flex items-center justify-center sm:justify-start gap-2 border border-gray-200 rounded-xl px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:border-blue-300 hover:text-blue-600 transition-all duration-200 shadow-sm whitespace-nowrap self-start"
+              >
+                <Pencil size={15} />
+                Edit Profil
+              </Link>
+            </div>
+          </div>
+          {/* Completion bar */}
+          <ProfileCompletionBar value={profile.kelengkapan_profil} />
+          {/* Card: Grid info detail */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-x-12 gap-y-4 sm:gap-y-6">
+              <InfoRow label="NIM" value={profile.nim ?? "-"} />
+              <InfoRow label="Email" value={profile.email || "-"} />
+              <InfoRow label="Kelas" value={profile.kelas ?? "-"} />
+              <InfoRow label="No. HP" value={profile.phone || "-"} />
+              <InfoRow
+                label="Tahun Angkatan"
+                value={
+                  profile.tahun_angkatan ? String(profile.tahun_angkatan) : "-"
+                }
+              />
+              <InfoRow
+                label="Program Studi"
+                value={profile.program_studi || "-"}
+              />
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

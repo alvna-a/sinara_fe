@@ -4,9 +4,8 @@
 //               POST /api/admin/feedbacks/:id/approve
 //               POST /api/admin/feedbacks/:id/reject
 import { useState, useEffect, useCallback } from "react";
+import { useNotification } from "@/components/ui/notification";
 import { Eye, X, Check, ChevronDown } from "lucide-react";
-import SidebarAdmin from "@/components/layout/sidebar_admin";
-import DashboardNavbar from "@/components/layout/dashboard_navbar";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
 
@@ -100,12 +99,13 @@ function DetailModal({
   onReject: (id: number, reason: string) => void;
   isActing: boolean;
 }) {
+  const { notify } = useNotification();
   const [rejectReason, setRejectReason] = useState("");
   const [showRejectInput, setShowRejectInput] = useState(false);
 
   const handleReject = () => {
     if (!rejectReason.trim() || rejectReason.trim().length < 5) {
-      alert("Alasan penolakan minimal 5 karakter.");
+      notify("Alasan penolakan minimal 5 karakter.", { variant: "error" });
       return;
     }
     onReject(item.id, rejectReason.trim());
@@ -312,6 +312,7 @@ export default function ReviewFeedbackPage() {
     approved: 0,
     rejected: 0,
   });
+  const { notify } = useNotification();
 
   const fetchFeedbacks = useCallback(async (status: StatusFilter) => {
     setLoading(true);
@@ -370,8 +371,9 @@ export default function ReviewFeedbackPage() {
       setSelected(null);
       await fetchFeedbacks(activeTab);
       await fetchCounts();
+      notify("Feedback berhasil disetujui.", { variant: "success" });
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : "Terjadi kesalahan.");
+      notify(err instanceof Error ? err.message : "Terjadi kesalahan.", { variant: "error" });
     } finally {
       setIsActing(false);
     }
@@ -389,18 +391,16 @@ export default function ReviewFeedbackPage() {
       setSelected(null);
       await fetchFeedbacks(activeTab);
       await fetchCounts();
+      notify("Feedback berhasil ditolak.", { variant: "success" });
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : "Terjadi kesalahan.");
+      notify(err instanceof Error ? err.message : "Terjadi kesalahan.", { variant: "error" });
     } finally {
       setIsActing(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#eef0f8] font-sans">
-      <SidebarAdmin />
-      <DashboardNavbar pageTitle="Review Feedback" userName="Admin" userRole="admin" />
-      <main className="md:ml-60 pt-16 px-4 sm:px-8 py-6">
+    <>
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 sm:p-8">
           {/* Header */}
           <div className="mb-6">
@@ -545,8 +545,6 @@ export default function ReviewFeedbackPage() {
             </div>
           )}
         </div>
-      </main>
-
       {/* Modal */}
       {selected && (
         <DetailModal
@@ -557,6 +555,6 @@ export default function ReviewFeedbackPage() {
           isActing={isActing}
         />
       )}
-    </div>
+    </>
   );
 }

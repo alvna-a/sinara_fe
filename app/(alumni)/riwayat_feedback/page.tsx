@@ -3,9 +3,6 @@
 // Terhubung ke: GET /api/feedbacks/my
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import SidebarAlumni from "@/components/layout/sidebar_alumni";
-import DashboardNavbar from "@/components/layout/dashboard_navbar";
-import MiniFooter from "@/components/layout/mini_footer";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
 
@@ -298,14 +295,7 @@ export default function RiwayatFeedbackPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#EEF2FF]">
-      <SidebarAlumni />
-      <DashboardNavbar
-        pageTitle="Riwayat Feedback"
-        userName=""
-        userRole="alumni"
-      />
-      <main className="md:ml-60 pt-16 px-4 sm:px-6 lg:px-8 pb-10">
+    <>
         <div className="max-w-5xl mx-auto space-y-5 py-6">
           <div className="bg-white rounded-2xl shadow-sm p-6 sm:p-8">
             <div className="flex items-center justify-between mb-6">
@@ -327,13 +317,11 @@ export default function RiwayatFeedbackPage() {
             </div>
             {renderContent()}
           </div>
-          <MiniFooter />
         </div>
-      </main>
 
       {selected && (
         <DetailModal item={selected} onClose={() => setSelected(null)} />
       )}
-    </div>
+    </>
   );
 }

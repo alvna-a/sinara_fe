@@ -1,10 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import SidebarAlumni from "@/components/layout/sidebar_alumni";
-import DashboardNavbar from "@/components/layout/dashboard_navbar";
-import MiniFooter from "@/components/layout/mini_footer";
 import { apiPost } from "@/services/api";
+import { useNotification } from "@/components/ui/notification";
 import {
   Step1Perusahaan, Step1Data, DURASI_MAP as DURASI_MAP_BE,  // ← import ini
   Step2Skill, Step2Data,
@@ -34,7 +32,6 @@ const INITIAL_STEP3: Step3Data = {
   jobdesk: [],
 };
 
-
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function InputFeedbackPage() {
@@ -45,6 +42,7 @@ export default function InputFeedbackPage() {
   const [step1Data, setStep1Data] = useState<Step1Data>(INITIAL_STEP1);
   const [step2Data, setStep2Data] = useState<Step2Data>(INITIAL_STEP2);
   const [step3Data, setStep3Data] = useState<Step3Data>(INITIAL_STEP3);
+  const { notify } = useNotification();
 
   // ── Submit ─────────────────────────────────────────────────────────────────
 
@@ -77,12 +75,12 @@ export default function InputFeedbackPage() {
         // Validation error dari Laravel — ambil pesan pertama
         const laravelErrors = (err as Record<string, Record<string, string[]>>).errors;
         const firstMsg = Object.values(laravelErrors)[0]?.[0] ?? "Validasi gagal.";
-        alert(firstMsg);
+        notify(firstMsg, { variant: "error" });
         setCurrentStep(1); // balik ke step 1 agar user bisa perbaiki
       } else if (err instanceof Error) {
-        alert(err.message);
+        notify(err.message, { variant: "error" });
       } else {
-        alert("Gagal mengirim feedback. Silakan coba lagi.");
+        notify("Gagal mengirim feedback. Silakan coba lagi.", { variant: "error" });
       }
     } finally {
       setIsLoading(false);
@@ -92,11 +90,7 @@ export default function InputFeedbackPage() {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-[#EEF2FF]">
-      <SidebarAlumni />
-      <DashboardNavbar pageTitle="Input Feedback" userName="Arjuna" userRole="alumni" />
-
-      <main className="md:ml-60 pt-16 px-4 sm:px-6 lg:px-8 pb-10">
+    <>
         <div className="max-w-3xl mx-auto space-y-5 py-6">
           <div className="bg-white rounded-2xl shadow-sm p-8">
             {isSuccess ? (
@@ -159,9 +153,7 @@ export default function InputFeedbackPage() {
             )}
           </div>
 
-          <MiniFooter />
         </div>
-      </main>
-    </div>
+    </>
   );
 }

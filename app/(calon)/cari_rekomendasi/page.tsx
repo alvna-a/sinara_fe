@@ -1,10 +1,9 @@
 "use client";
-
+// ─── app/(calon)/cari_rekomendasi/page.tsx
+// Halaman 3-step form rekomendasi tempat magang untuk calon mahasiswa magang
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import SidebarCalon from "@/components/layout/sidebar_calon";
-import DashboardNavbar from "@/components/layout/dashboard_navbar";
-import MiniFooter from "@/components/layout/mini_footer";
+import { useNotification } from "@/components/ui/notification";
 import { Step1SkillDivisi } from "@/components/rekomendasi/Step1skilldivisi";
 import { Step2DetailMagang } from "@/components/rekomendasi/Step2detailmagang";
 import { Step3Review } from "@/components/rekomendasi/Step3review";
@@ -12,31 +11,51 @@ import { StepIndicatorRekom } from "@/components/rekomendasi/Stepindicatorrekom"
 import type { Step1Data } from "@/components/rekomendasi/Step1skilldivisi";
 import type { Step2Data } from "@/components/rekomendasi/Step2detailmagang";
 
+// ── Constants ──────────────────────────────────────────────────────────────────
 const USER_NAME = "Arjuna";
-const INITIAL_STEP1: Step1Data = { divisions: [], skills: [] };
-const INITIAL_STEP2: Step2Data = { locations: [], durasi: "" };
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
 
+const INITIAL_STEP1: Step1Data = {
+  divisions: [],
+  skills: [],
+};
+const INITIAL_STEP2: Step2Data = {
+  locations: [],
+  durasi: "",
+};
+
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
+
+// ── Page ───────────────────────────────────────────────────────────────────────
 export default function CariRekomendasiPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [step1Data, setStep1Data] = useState<Step1Data>(INITIAL_STEP1);
   const [step2Data, setStep2Data] = useState<Step2Data>(INITIAL_STEP2);
+  const { notify } = useNotification();
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
     fetch(`${API_BASE}/skills/user`, {
-      headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+      },
     })
-      .then((r) => (r.ok ? r.json() : null))
+      .then((r) => r.ok ? r.json() : null)
       .then((json) => {
-        const skills: string[] = (json?.data ?? []).map((s: any) => s.name).filter(Boolean);
-        if (skills.length > 0) setStep1Data((prev) => ({ ...prev, skills }));
+        // Response: { data: [{id, name, created_at, ...}] }
+        const skills: string[] = (json?.data ?? [])
+          .map((s: any) => s.name)
+          .filter(Boolean);
+        if (skills.length > 0) {
+          setStep1Data((prev) => ({ ...prev, skills }));
+        }
       })
       .catch(() => {});
   }, []);
-
+  // ── Submit ─────────────────────────────────────────────────────────────────
   const handleGenerate = async () => {
     setIsLoading(true);
     try {
@@ -47,7 +66,6 @@ export default function CariRekomendasiPage() {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       };
 
-      // Step A: sync skill user ke DB
       const skillRes = await fetch(`${API_BASE}/skills/user`, {
         method: "POST",
         headers,
@@ -58,46 +76,60 @@ export default function CariRekomendasiPage() {
         throw new Error(err?.message ?? `Gagal menyimpan skill (${skillRes.status})`);
       }
 
-      // Step B: generate rekomendasi
       const rekomRes = await fetch(`${API_BASE}/recommendations`, {
         method: "POST",
         headers,
-        body: JSON.stringify({ passion_division: step1Data.divisions[0] ?? "" }),
+        body: JSON.stringify({
+          passion_divisions: step1Data.divisions,
+          preferred_locations: step2Data.locations,
+          preferred_duration: step2Data.durasi,
+        }),
       });
       if (!rekomRes.ok) {
         const err = await rekomRes.json().catch(() => ({}));
         throw new Error(err?.message ?? `Gagal generate rekomendasi (${rekomRes.status})`);
       }
 
-      const json = await rekomRes.json();
-      // BE sekarang return session_id — langsung redirect ke halaman hasil sesi itu
-      const sessionKey = json.session_key;
-      router.push(`/riwayat_rekomendasi/${sessionKey}`);
+      router.push("/riwayat_rekomendasi");
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : "Gagal generate rekomendasi.");
+      notify(err instanceof Error ? err.message : "Gagal generate rekomendasi.", {
+        variant: "error",
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#EEF2FF]">
-      <SidebarCalon />
-      <DashboardNavbar pageTitle="Cari Rekomendasi Magang" userName={USER_NAME} userRole="calon" />
-      <main className="md:ml-60 pt-16 px-4 sm:px-6 lg:px-8 pb-10">
+    <>
         <div className="max-w-3xl mx-auto space-y-5 py-6">
           <div className="bg-white rounded-2xl shadow-sm p-8">
+            {/* ── Header ──────────────────────────────────────────────────── */}
             <div className="text-center mb-6">
-              <p className="text-indigo-600 text-sm font-semibold mb-1">Step {currentStep} dari 3</p>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Rekomendasi Tempat Magang</h2>
+              <p className="text-indigo-600 text-sm font-semibold mb-1">
+                Step {currentStep} dari 3
+              </p>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                Rekomendasi Tempat Magang
+              </h2>
               <p className="text-sm text-gray-500 max-w-md mx-auto leading-relaxed">
-                Isi data divisi dan skill yang benar-benar kamu miliki dan kuasai. Informasi ini akan
-                membantu sistem memberikan rekomendasi yang lebih akurat.
+                Isi data divisi, dan skill yang benar-benar kamu miliki dan
+                kuasai. Informasi ini akan membantu sistem memberikan
+                rekomendasi yang lebih akurat.
               </p>
             </div>
+
+            {/* ── Step Indicator ──────────────────────────────────────────── */}
             <StepIndicatorRekom currentStep={currentStep} />
+
+            {/* ── Step Content ────────────────────────────────────────────── */}
             {currentStep === 1 && (
-              <Step1SkillDivisi data={step1Data} onChange={setStep1Data} onNext={() => setCurrentStep(2)} />
+              <Step1SkillDivisi
+                data={step1Data}
+                onChange={setStep1Data}
+                onNext={() => setCurrentStep(2)}
+              />
             )}
             {currentStep === 2 && (
               <Step2DetailMagang
@@ -117,9 +149,7 @@ export default function CariRekomendasiPage() {
               />
             )}
           </div>
-          <MiniFooter />
         </div>
-      </main>
-    </div>
+    </>
   );
 }

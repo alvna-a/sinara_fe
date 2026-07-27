@@ -1,37 +1,33 @@
 "use client";
 // app/(calon)/profil_calon/edit_profil/page.tsx
 // Endpoint:
-//   POST /api/profile → update phone, program_studi, semester, photo
-//   PUT  /api/account → update name & email  (via saveProfile hook)
-
+//   POST /api/profile → update phone, program_studi, semester, photo
+//   PUT  /api/account → update name & email  (via saveProfile hook)
 import { useState, useRef, useEffect } from "react";
 import { ArrowLeft, Save, Camera, X, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import SidebarCalon from "@/components/layout/sidebar_calon";
 import { useProfile } from "@/hooks/useProfile";
-
+// NOTE: SidebarCalon DIHAPUS. app/(calon)/layout.tsx sudah render
+// SidebarCalon + DashboardHeader + DashboardMain buat semua halaman calon.
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-
 // ─── Opsi dropdown ────────────────────────────────────────────────────────────
-
 const PROGRAM_STUDI_OPTIONS = [
   "D3 Teknik Informatika",
   "D4 Teknologi Rekayasa Komputer",
 ];
-
 const SEMESTER_OPTIONS = ["1", "2", "3", "4", "5", "6", "7", "8"];
-
 // ─── Types ────────────────────────────────────────────────────────────────────
-
 interface EditableFields {
+  name: string;
+  email: string;
   phone: string;
   program_studi: string;
   semester: string;
+  kelas: string;
+  tahun_angkatan: string;
 }
-
 // ─── Avatar ───────────────────────────────────────────────────────────────────
-
 function Avatar({ photo, nama }: { photo: string | null; nama: string }) {
   if (photo) {
     return (
@@ -54,9 +50,7 @@ function Avatar({ photo, nama }: { photo: string | null; nama: string }) {
     </div>
   );
 }
-
 // ─── Input biasa (termasuk select & read-only) ────────────────────────────────
-
 function InputField({
   label,
   name,
@@ -71,7 +65,9 @@ function InputField({
   label: string;
   name: string;
   value: string;
-  onChange?: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
+  onChange?: (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => void;
   type?: string;
   placeholder?: string;
   required?: boolean;
@@ -82,14 +78,12 @@ function InputField({
     "px-3 sm:px-4 py-2 border border-gray-200 rounded-xl text-xs sm:text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all w-full bg-white";
   const readOnlyClass =
     "px-3 sm:px-4 py-2 border border-gray-100 rounded-xl text-xs sm:text-sm bg-gray-50 text-gray-400 w-full cursor-not-allowed";
-
   return (
     <div className="flex flex-col gap-2">
       <label className="text-xs sm:text-sm font-semibold text-gray-700">
         {label}{" "}
         {required && !readOnly && <span className="text-red-500">*</span>}
       </label>
-
       {readOnly ? (
         <input type={type} value={value} readOnly className={readOnlyClass} />
       ) : options ? (
@@ -119,9 +113,7 @@ function InputField({
     </div>
   );
 }
-
 // ─── Input password dengan toggle ────────────────────────────────────────────
-
 function PasswordField({
   label,
   value,
@@ -161,9 +153,7 @@ function PasswordField({
     </div>
   );
 }
-
 // ─── Loading skeleton ─────────────────────────────────────────────────────────
-
 function EditSkeleton() {
   return (
     <div className="animate-pulse flex flex-col gap-4 sm:gap-5 w-full">
@@ -173,23 +163,23 @@ function EditSkeleton() {
     </div>
   );
 }
-
 // ─── Main Page ──────────────────────────────────────────────────────────────────
-
 export default function EditProfilCalonPage() {
   const router = useRouter();
-  const { profile, loading, isSaving, saveProfile } = useProfile();
-
+  const { profile, loading, isSaving, saveProfile, saveAccount } = useProfile();
   const [formData, setFormData] = useState<EditableFields>({
+    name: "",
+    email: "",
     phone: "",
     program_studi: "",
     semester: "",
+    kelas: "",
+    tahun_angkatan: "",
   });
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
-
   // Password
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -200,16 +190,20 @@ export default function EditProfilCalonPage() {
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [isSavingPassword, setIsSavingPassword] = useState(false);
-
   const fileRef = useRef<HTMLInputElement>(null);
-
   // Isi form dari data database setelah hook selesai fetch
   useEffect(() => {
     if (profile && !loading) {
       setFormData({
+        name: profile.name ?? "",
+        email: profile.email ?? "",
         phone: profile.phone ?? "",
         program_studi: profile.program_studi ?? "",
         semester: profile.semester ?? "",
+        kelas: profile.kelas ?? "",
+        tahun_angkatan: profile.tahun_angkatan
+          ? String(profile.tahun_angkatan)
+          : "",
       });
       // Tampilkan foto dari database jika belum ada preview baru
       if (!photoFile) {
@@ -217,15 +211,13 @@ export default function EditProfilCalonPage() {
       }
     }
   }, [profile, loading]);
-
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (errorMessage) setErrorMessage("");
   };
-
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -241,35 +233,48 @@ export default function EditProfilCalonPage() {
     setPhotoPreview(URL.createObjectURL(file));
     if (errorMessage) setErrorMessage("");
   };
-
-  // Simpan perubahan profil → POST /api/profile (via saveProfile hook)
+  // Simpan perubahan profil → PUT /api/account (nama, email) + POST /api/profile (sisanya)
   const handleSave = async () => {
+    if (!formData.name.trim()) {
+      setErrorMessage("Nama lengkap tidak boleh kosong.");
+      return;
+    }
+    if (!formData.email.trim()) {
+      setErrorMessage("Email tidak boleh kosong.");
+      return;
+    }
     if (!formData.phone.trim()) {
       setErrorMessage("No. HP tidak boleh kosong.");
       return;
     }
     setErrorMessage("");
     try {
+      await saveAccount({
+        name: formData.name,
+        email: formData.email,
+      });
       await saveProfile({
         phone: formData.phone,
         program_studi: formData.program_studi,
         semester: formData.semester,
+        kelas: formData.kelas,
+        tahun_angkatan: formData.tahun_angkatan || undefined,
         photoFile: photoFile,
       });
       setSuccessMessage("Profil berhasil diperbarui!");
       setTimeout(() => router.push("/profil_calon"), 1200);
     } catch (err) {
       setErrorMessage(
-        err instanceof Error ? err.message : "Terjadi kesalahan saat menyimpan."
+        err instanceof Error
+          ? err.message
+          : "Terjadi kesalahan saat menyimpan.",
       );
     }
   };
-
   // Ganti password → TODO: sambungkan ke endpoint Laravel ganti password
   const handleSavePassword = async () => {
     setPasswordError(null);
     setPasswordSuccess(false);
-
     if (!oldPassword || !newPassword || !confirmPassword) {
       setPasswordError("Semua field password harus diisi.");
       return;
@@ -282,7 +287,6 @@ export default function EditProfilCalonPage() {
       setPasswordError("Konfirmasi password tidak cocok.");
       return;
     }
-
     setIsSavingPassword(true);
     try {
       const token = localStorage.getItem("access_token");
@@ -298,12 +302,10 @@ export default function EditProfilCalonPage() {
           password_confirmation: confirmPassword,
         }),
       });
-
       if (!res.ok) {
         const errJson = await res.json().catch(() => ({}));
         throw new Error(errJson?.message ?? "Gagal memperbarui password.");
       }
-
       setPasswordSuccess(true);
       setOldPassword("");
       setNewPassword("");
@@ -311,244 +313,235 @@ export default function EditProfilCalonPage() {
       setTimeout(() => setPasswordSuccess(false), 3000);
     } catch (err) {
       setPasswordError(
-        err instanceof Error ? err.message : "Gagal memperbarui password."
+        err instanceof Error ? err.message : "Gagal memperbarui password.",
       );
     } finally {
       setIsSavingPassword(false);
     }
   };
-
   if (loading) {
     return (
-      <div className="flex min-h-screen bg-[#EEF0F8]">
-        <SidebarCalon />
-        <main className="md:ml-60 flex-1 flex flex-col min-h-screen">
-          <header className="bg-white border-b border-gray-200 px-4 sm:px-6 md:px-8 py-3 sm:py-4 flex items-center gap-3 sticky top-0 z-10 pt-16 md:pt-4">
-            <div className="w-9 h-9 rounded-lg bg-gray-100" />
-            <div className="h-5 w-40 bg-gray-200 rounded animate-pulse" />
-          </header>
-          <div className="flex-1 px-4 sm:px-6 md:px-8 py-5 sm:py-7">
-            <EditSkeleton />
-          </div>
-        </main>
+      <div className="flex flex-col gap-3">
+        <EditSkeleton />
       </div>
     );
   }
-
   return (
-    <div className="flex min-h-screen bg-[#EEF0F8]">
-      <SidebarCalon />
-      <main className="md:ml-60 flex-1 flex flex-col min-h-screen">
-
-        {/* ── Header ── */}
-        <header className="bg-white border-b border-gray-200 px-4 sm:px-6 md:px-8 py-3 sm:py-4 flex items-start sm:items-center gap-3 sm:gap-4 sticky top-0 z-10 pt-16 md:pt-4">
-          <Link
-            href="/profil_calon"
-            className="inline-flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-lg hover:bg-gray-100 transition-colors flex-shrink-0"
+    <div className="flex flex-col gap-4 sm:gap-5 w-full max-w-7xl mx-auto">
+      {/* Sub-header: back + judul (fungsional, bukan duplikat top navbar) */}
+      <div className="flex items-start sm:items-center gap-3 sm:gap-4">
+        <Link
+          href="/profil_calon"
+          className="inline-flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-lg hover:bg-gray-100 transition-colors flex-shrink-0 bg-white border border-gray-100 shadow-sm"
+        >
+          <ArrowLeft size={18} className="text-gray-700" />
+        </Link>
+        <div className="min-w-0 flex-1">
+          <h1 className="text-lg sm:text-xl font-bold text-gray-900">
+            Edit Profil
+          </h1>
+          <p className="text-xs sm:text-sm text-gray-600">
+            Perbarui informasi profil dan data kontak Anda
+          </p>
+        </div>
+      </div>
+      {successMessage && (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3 sm:p-4 flex items-center justify-between">
+          <p className="text-xs sm:text-sm font-medium text-emerald-700">
+            {successMessage}
+          </p>
+          <button
+            onClick={() => setSuccessMessage("")}
+            className="text-emerald-600 hover:text-emerald-700 flex-shrink-0 ml-3"
           >
-            <ArrowLeft size={18} className="text-gray-700" />
-          </Link>
-          <div className="min-w-0 flex-1">
-            <h1 className="text-lg sm:text-xl font-bold text-gray-900">Edit Profil</h1>
-            <p className="text-xs sm:text-sm text-gray-600">
-              Perbarui informasi profil dan data kontak Anda
+            <X size={18} />
+          </button>
+        </div>
+      )}
+      {errorMessage && (
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-3 sm:p-4 flex items-center justify-between">
+          <p className="text-xs sm:text-sm font-medium text-red-700">
+            {errorMessage}
+          </p>
+          <button
+            onClick={() => setErrorMessage("")}
+            className="text-red-600 hover:text-red-700 flex-shrink-0 ml-3"
+          >
+            <X size={18} />
+          </button>
+        </div>
+      )}
+      {/* ── Card Foto Profil ── */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6">
+        <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-4">
+          Foto Profil
+        </h3>
+        <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-6">
+          <div className="flex-shrink-0">
+            <Avatar photo={photoPreview} nama={profile.name || "C"} />
+          </div>
+          <div className="flex flex-col gap-3 flex-1">
+            <label className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors w-fit">
+              <Camera size={18} className="text-blue-600 flex-shrink-0" />
+              <span className="text-sm font-medium text-gray-700">
+                Ubah Foto
+              </span>
+              <input
+                ref={fileRef}
+                type="file"
+                accept=".jpg,.jpeg,.png"
+                onChange={handlePhotoChange}
+                className="hidden"
+              />
+            </label>
+            <p className="text-xs text-gray-500">
+              Format: JPG, JPEG, PNG. Ukuran maksimal: 5MB
             </p>
           </div>
-        </header>
-
-        {/* ── Content ── */}
-        <div className="flex-1 px-4 sm:px-6 md:px-8 py-5 sm:py-7 flex flex-col gap-4 sm:gap-5 w-full max-w-7xl mx-auto">
-
-          {successMessage && (
-            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3 sm:p-4 flex items-center justify-between">
-              <p className="text-xs sm:text-sm font-medium text-emerald-700">{successMessage}</p>
-              <button onClick={() => setSuccessMessage("")} className="text-emerald-600 hover:text-emerald-700 flex-shrink-0 ml-3">
-                <X size={18} />
-              </button>
-            </div>
-          )}
-
-          {errorMessage && (
-            <div className="bg-red-50 border border-red-200 rounded-2xl p-3 sm:p-4 flex items-center justify-between">
-              <p className="text-xs sm:text-sm font-medium text-red-700">{errorMessage}</p>
-              <button onClick={() => setErrorMessage("")} className="text-red-600 hover:text-red-700 flex-shrink-0 ml-3">
-                <X size={18} />
-              </button>
-            </div>
-          )}
-
-          {/* ── Card Foto Profil ── */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6">
-            <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-4">
-              Foto Profil
-            </h3>
-            <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-6">
-              <div className="flex-shrink-0">
-                <Avatar photo={photoPreview} nama={profile.name || "C"} />
-              </div>
-              <div className="flex flex-col gap-3 flex-1">
-                <label className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors w-fit">
-                  <Camera size={18} className="text-blue-600 flex-shrink-0" />
-                  <span className="text-sm font-medium text-gray-700">Ubah Foto</span>
-                  <input
-                    ref={fileRef}
-                    type="file"
-                    accept=".jpg,.jpeg,.png"
-                    onChange={handlePhotoChange}
-                    className="hidden"
-                  />
-                </label>
-                <p className="text-xs text-gray-500">
-                  Format: JPG, JPEG, PNG. Ukuran maksimal: 5MB
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* ── Card Informasi Pribadi ── */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6">
-            <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-4 sm:mb-6">
-              Informasi Pribadi
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
-
-              {/* Read-only: dari database, tidak bisa diubah di sini */}
-              <InputField
-                label="Nama Lengkap"
-                name="nama"
-                value={profile.name}
-                readOnly
-              />
-              <InputField
-                label="NIM"
-                name="nim"
-                value={profile.nim ?? ""}
-                readOnly
-              />
-              <InputField
-                label="Email"
-                name="email"
-                value={profile.email}
-                readOnly
-              />
-              <InputField
-                label="Kelas"
-                name="kelas"
-                value={profile.kelas ?? ""}
-                readOnly
-              />
-              <InputField
-                label="Tahun Angkatan"
-                name="tahun_angkatan"
-                value={profile.tahun_angkatan ? String(profile.tahun_angkatan) : ""}
-                readOnly
-              />
-
-              {/* Editable: tersambung ke POST /api/profile */}
-              <InputField
-                label="No. HP"
-                name="phone"
-                value={formData.phone}
-                onChange={handleInputChange}
-                type="tel"
-                placeholder="08xxxxxxxxxx"
-                required
-              />
-              <InputField
-                label="Program Studi"
-                name="program_studi"
-                value={formData.program_studi}
-                onChange={handleInputChange}
-                options={PROGRAM_STUDI_OPTIONS}
-              />
-              <InputField
-                label="Semester"
-                name="semester"
-                value={formData.semester}
-                onChange={handleInputChange}
-                options={SEMESTER_OPTIONS}
-              />
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-3 justify-end mt-6">
-              <button
-                onClick={() => router.push("/profil_calon")}
-                disabled={isSaving}
-                className="px-4 sm:px-6 py-2 border border-gray-200 rounded-xl text-xs sm:text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-all disabled:opacity-50 order-2 sm:order-1"
-              >
-                Batal
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={isSaving}
-                className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2 bg-blue-600 text-white rounded-xl text-xs sm:text-sm font-semibold hover:bg-blue-700 transition-all disabled:opacity-50 order-1 sm:order-2"
-              >
-                <Save size={16} />
-                {isSaving ? "Menyimpan..." : "Simpan Perubahan"}
-              </button>
-            </div>
-          </div>
-
-          {/* ── Card Ganti Password ── */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6">
-            <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-4 sm:mb-6">
-              Ganti Password
-            </h3>
-
-            <div className="grid grid-cols-1 gap-4 sm:gap-5">
-              <PasswordField
-                label="Password Lama"
-                value={oldPassword}
-                onChange={setOldPassword}
-                placeholder="Masukkan password lama"
-                show={showOld}
-                onToggle={() => setShowOld((s) => !s)}
-              />
-              <PasswordField
-                label="Password Baru"
-                value={newPassword}
-                onChange={setNewPassword}
-                placeholder="Masukkan password baru"
-                show={showNew}
-                onToggle={() => setShowNew((s) => !s)}
-              />
-              <PasswordField
-                label="Konfirmasi Password Baru"
-                value={confirmPassword}
-                onChange={setConfirmPassword}
-                placeholder="Ulangi password baru"
-                show={showConfirm}
-                onToggle={() => setShowConfirm((s) => !s)}
-              />
-            </div>
-
-            {passwordError && (
-              <div className="mt-4 bg-red-50 border border-red-200 rounded-2xl px-4 py-3">
-                <p className="text-xs sm:text-sm font-medium text-red-700">{passwordError}</p>
-              </div>
-            )}
-            {passwordSuccess && (
-              <div className="mt-4 bg-emerald-50 border border-emerald-200 rounded-2xl px-4 py-3">
-                <p className="text-xs sm:text-sm font-medium text-emerald-700">
-                  ✓ Password berhasil diperbarui!
-                </p>
-              </div>
-            )}
-
-            <div className="flex flex-col sm:flex-row gap-3 justify-end mt-6">
-              <button
-                onClick={handleSavePassword}
-                disabled={isSavingPassword}
-                className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2 bg-blue-600 text-white rounded-xl text-xs sm:text-sm font-semibold hover:bg-blue-700 transition-all disabled:opacity-50"
-              >
-                <Save size={16} />
-                {isSavingPassword ? "Menyimpan..." : "Perbarui Password"}
-              </button>
-            </div>
-          </div>
-
         </div>
-      </main>
+      </div>
+      {/* ── Card Informasi Pribadi ── */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6">
+        <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-4 sm:mb-6">
+          Informasi Pribadi
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+          {/* NIM tetap dikunci — dipakai buat login, gak boleh diubah dari sini */}
+          <InputField
+            label="Nama Lengkap"
+            name="name"
+            value={formData.name}
+            onChange={handleInputChange}
+            required
+          />
+          <InputField
+            label="NIM"
+            name="nim"
+            value={profile.nim ?? ""}
+            readOnly
+          />
+          <InputField
+            label="Email"
+            name="email"
+            value={formData.email}
+            onChange={handleInputChange}
+            type="email"
+            required
+          />
+          <InputField
+            label="Kelas"
+            name="kelas"
+            value={formData.kelas}
+            onChange={handleInputChange}
+            placeholder="Contoh: IK-3C"
+          />
+          <InputField
+            label="Tahun Angkatan"
+            name="tahun_angkatan"
+            value={formData.tahun_angkatan}
+            onChange={handleInputChange}
+            type="number"
+            placeholder="Contoh: 2023"
+          />
+          {/* Editable: tersambung ke POST /api/profile */}
+          <InputField
+            label="No. HP"
+            name="phone"
+            value={formData.phone}
+            onChange={handleInputChange}
+            type="tel"
+            placeholder="08xxxxxxxxxx"
+            required
+          />
+          <InputField
+            label="Program Studi"
+            name="program_studi"
+            value={formData.program_studi}
+            onChange={handleInputChange}
+            options={PROGRAM_STUDI_OPTIONS}
+          />
+          <InputField
+            label="Semester"
+            name="semester"
+            value={formData.semester}
+            onChange={handleInputChange}
+            options={SEMESTER_OPTIONS}
+          />
+        </div>
+        <div className="flex flex-col sm:flex-row gap-3 justify-end mt-6">
+          <button
+            onClick={() => router.push("/profil_calon")}
+            disabled={isSaving}
+            className="px-4 sm:px-6 py-2 border border-gray-200 rounded-xl text-xs sm:text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-all disabled:opacity-50 order-2 sm:order-1"
+          >
+            Batal
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2 bg-blue-600 text-white rounded-xl text-xs sm:text-sm font-semibold hover:bg-blue-700 transition-all disabled:opacity-50 order-1 sm:order-2"
+          >
+            <Save size={16} />
+            {isSaving ? "Menyimpan..." : "Simpan Perubahan"}
+          </button>
+        </div>
+      </div>
+      {/* ── Card Ganti Password ── */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6">
+        <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-4 sm:mb-6">
+          Ganti Password
+        </h3>
+        <div className="grid grid-cols-1 gap-4 sm:gap-5">
+          <PasswordField
+            label="Password Lama"
+            value={oldPassword}
+            onChange={setOldPassword}
+            placeholder="Masukkan password lama"
+            show={showOld}
+            onToggle={() => setShowOld((s) => !s)}
+          />
+          <PasswordField
+            label="Password Baru"
+            value={newPassword}
+            onChange={setNewPassword}
+            placeholder="Masukkan password baru"
+            show={showNew}
+            onToggle={() => setShowNew((s) => !s)}
+          />
+          <PasswordField
+            label="Konfirmasi Password Baru"
+            value={confirmPassword}
+            onChange={setConfirmPassword}
+            placeholder="Ulangi password baru"
+            show={showConfirm}
+            onToggle={() => setShowConfirm((s) => !s)}
+          />
+        </div>
+        {passwordError && (
+          <div className="mt-4 bg-red-50 border border-red-200 rounded-2xl px-4 py-3">
+            <p className="text-xs sm:text-sm font-medium text-red-700">
+              {passwordError}
+            </p>
+          </div>
+        )}
+        {passwordSuccess && (
+          <div className="mt-4 bg-emerald-50 border border-emerald-200 rounded-2xl px-4 py-3">
+            <p className="text-xs sm:text-sm font-medium text-emerald-700">
+              ✓ Password berhasil diperbarui!
+            </p>
+          </div>
+        )}
+        <div className="flex flex-col sm:flex-row gap-3 justify-end mt-6">
+          <button
+            onClick={handleSavePassword}
+            disabled={isSavingPassword}
+            className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2 bg-blue-600 text-white rounded-xl text-xs sm:text-sm font-semibold hover:bg-blue-700 transition-all disabled:opacity-50"
+          >
+            <Save size={16} />
+            {isSavingPassword ? "Menyimpan..." : "Perbarui Password"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

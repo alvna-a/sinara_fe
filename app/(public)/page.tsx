@@ -1,29 +1,27 @@
 'use client'
+
 import Image from "next/image";
 import Link from "next/link";
 
 export default function Home() {
   return (
     <main className="font-[Poppins,sans-serif] bg-gray-50">
-
       {/* ===================== */}
       {/* HERO */}
       {/* ===================== */}
       <section className="bg-[#E0E7FF] px-6 md:px-10 py-20">
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
-
           <div>
             <p className="font-semibold text-gray-500 mb-2">Halo, Sahabat Mahasiswa</p>
             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 leading-tight mb-4">
               Lagi cari magang yang cocok sama skill kamu?
             </h1>
             <p className="text-gray-500 text-lg max-w-lg mt-3">
-              Di sini, kamu bisa nemuin posisi magang yang bener-bener sesuai minat dan kemampuan kamu, 
+              Di sini, kamu bisa nemuin posisi magang yang bener-bener sesuai minat dan kemampuan kamu,
               bukan asal pilih! Bahkan kamu juga bakal dapet ranking posisi yang paling relate buat kamu 🔥
               <br /><br />
               Yuk, jangan sampai salah langkah! Temuin magang impianmu sekarang dan gaskeun kariermu dari sini!
             </p>
-
             <div className="flex gap-4 mt-8 mb-8 flex-wrap">
               <Link
                 href="/register"
@@ -39,7 +37,6 @@ export default function Home() {
                 Pelajari Cara Kerja
               </Link>
             </div>
-
             <div className="flex gap-10 mt-2">
               <div>
                 <span className="font-bold text-3xl text-gray-900">300+</span><br />
@@ -51,7 +48,6 @@ export default function Home() {
               </div>
             </div>
           </div>
-
           <div>
             <Image
               src="/beranda/hero.png"
@@ -75,7 +71,6 @@ export default function Home() {
           <p className="text-gray-500 text-lg max-w-3xl mb-10">
             Banyak mahasiswa memilih magang hanya berdasarkan nama perusahaan atau tren. Padahal, kecocokan skill dan minat jauh lebih menentukan pengalaman dan perkembangan karier.
           </p>
-
           <div className="flex flex-col gap-8 w-full items-center">
             {[
               {
@@ -108,7 +103,7 @@ export default function Home() {
                   />
                 </div>
                 <div>
-                  <p className="font-semibold text-xl mb-3">{item.title}</p>
+                  <p className="font-semibold text-xl mb-3 text-gray-900">{item.title}</p>
                   <p className="text-gray-500 text-base leading-relaxed">{item.desc}</p>
                 </div>
               </div>
@@ -128,7 +123,6 @@ export default function Home() {
           <p className="text-gray-500 text-lg text-center max-w-3xl mx-auto mb-12">
             Kami tidak hanya menampilkan daftar lowongan. Sistem ini dirancang untuk membantu kamu memahami posisi mana yang benar-benar selaras dengan kemampuan dan minatmu.
           </p>
-
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
               {
@@ -155,7 +149,7 @@ export default function Home() {
                   height={210}
                   className="rounded-2xl mb-4 mx-auto"
                 />
-                <p className="font-semibold text-lg mb-3">{item.title}</p>
+                <p className="font-semibold text-lg mb-3 text-gray-900">{item.title}</p>
                 <p className="text-gray-500 text-sm leading-relaxed text-justify">{item.desc}</p>
               </div>
             ))}
@@ -163,7 +157,7 @@ export default function Home() {
         </div>
       </section>
 
-          {/* CTA */}
+      {/* CTA */}
       <section className="px-6 md:px-10 py-14">
         <div className="max-w-6xl mx-auto">
           <div
@@ -171,13 +165,12 @@ export default function Home() {
             style={{ background: "linear-gradient(90deg, #6366f1, #8b5cf6)" }}
           >
             <h2 className="text-2xl md:text-3xl font-bold mb-3 leading-tight">
-            Bingung Mau Magang di Divisi Apa?<br />
-            Cari yang Paling Cocok Buat Kamu di Sini!
+              Bingung Mau Magang di Divisi Apa?<br />
+              Cari yang Paling Cocok Buat Kamu di Sini!
             </h2>
-
             <p className="text-indigo-100 text-l max-w-xl mx-auto mb-6">
-            Tinggal masukin skill yang kamu punya, nanti sistem bakal bantu nunjukin
-            divisi magang yang paling cocok dan relate buat kamu. Gak perlu nebak-nebak lagi 😉
+              Tinggal masukin skill yang kamu punya, nanti sistem bakal bantu nunjukin
+              divisi magang yang paling cocok dan relate buat kamu. Gak perlu nebak-nebak lagi 😉
             </p>
             <Link
               href="/register"
@@ -192,8 +185,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-
     </main>
   );
 }

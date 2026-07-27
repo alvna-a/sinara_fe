@@ -1,359 +1,516 @@
 "use client";
+// app/(alumni)/profil_alumni/edit_profil/page.tsx
+// Endpoint (sama seperti sebelumnya, TIDAK berubah):
+//   PUT  /api/account → update name & email  (via saveAccount hook)
+//   POST /api/profile → update phone, kelas, tahun_angkatan, photo (via saveProfile hook)
+// Desain disamakan dengan app/(calon)/profil_calon/edit_profil/page.tsx.
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { ArrowLeft, Save, Camera, X, Eye, EyeOff } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, Camera, ArrowLeft, Upload, X } from "lucide-react";
-import SidebarCalon from "@/components/layout/sidebar_alumni";
-import SidebarAlumni from "@/components/layout/sidebar_alumni";
+import { useProfile } from "@/hooks/useProfile";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-interface UserProfile {
-  nim: string;
-  nama: string;
-  program_studi: string;
-  semester: number;
-  kelas: string;
-  tahun_angkatan: number;
+// NOTE: SidebarAlumni DIHAPUS. app/(alumni)/layout.tsx sudah render
+// SidebarAlumni + DashboardHeader + DashboardMain buat semua halaman alumni.
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
+// ─── Types ──────────────────────────────────────────────────────────────────────
+interface EditableFields {
+  name: string;
   email: string;
   phone: string;
-  photo: string | null;
-  status_magang: "Belum Magang" | "Sedang Magang" | "Selesai Magang";
-  kelengkapan_profil: number;
+  kelas: string;
+  tahun_angkatan: string;
 }
 
-const STORAGE_KEY = "sinara-profile";
-
-const mockProfile: UserProfile = {
-  nim: "3.34.22.1.01",
-  nama: "Arjuna Wiguna",
-  program_studi: "D3 - Teknik Informatika",
-  semester: 4,
-  kelas: "IK - 3B",
-  tahun_angkatan: 2022,
-  email: "arjuna.33422101@mhs.polines.ac.id",
-  phone: "08987654321",
-  photo: null,
-  status_magang: "Belum Magang",
-  kelengkapan_profil: 80,
-};
-
-function getSavedProfile(): UserProfile {
-  if (typeof window === "undefined") return mockProfile;
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? (JSON.parse(stored) as UserProfile) : mockProfile;
-  } catch {
-    return mockProfile;
+// ─── Avatar ─────────────────────────────────────────────────────────────────────
+function Avatar({ photo, nama }: { photo: string | null; nama: string }) {
+  if (photo) {
+    return (
+      <img
+        src={photo}
+        alt={nama}
+        className="w-24 h-24 rounded-full object-cover ring-4 ring-indigo-100"
+      />
+    );
   }
-}
-
-const statusConfig: Record<
-  UserProfile["status_magang"],
-  { label: string; className: string }
-> = {
-  "Belum Magang": {
-    label: "Belum Magang",
-    className: "bg-amber-400 text-white text-xs font-semibold px-3 py-1 rounded-full",
-  },
-  "Sedang Magang": {
-    label: "Sedang Magang",
-    className: "bg-blue-500 text-white text-xs font-semibold px-3 py-1 rounded-full",
-  },
-  "Selesai Magang": {
-    label: "Selesai Magang",
-    className: "bg-emerald-500 text-white text-xs font-semibold px-3 py-1 rounded-full",
-  },
-};
-
-// ─── Avatar ───────────────────────────────────────────────────────────────────
-function Avatar({ photo, nama, size = "md" }: { photo: string | null; nama: string; size?: "sm" | "md" | "lg" }) {
-  const dim = size === "lg" ? "w-20 h-20" : size === "sm" ? "w-9 h-9" : "w-16 h-16";
-  const text = size === "lg" ? "text-2xl" : size === "sm" ? "text-xs" : "text-xl";
-  const ring = size === "sm" ? "ring-2 ring-indigo-100" : "ring-4 ring-indigo-100";
-  const initials = nama.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase();
-
-  if (photo) return <img src={photo} alt={nama} className={`${dim} rounded-full object-cover ${ring}`} />;
+  const initials = (nama || "?")
+    .split(" ")
+    .map((n) => n[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
   return (
-    <div className={`${dim} rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center ${ring}`}>
-      <span className={`text-white font-bold ${text}`}>{initials}</span>
+    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center ring-4 ring-indigo-100">
+      <span className="text-white text-3xl font-bold">{initials}</span>
     </div>
   );
 }
 
-// ─── Completion Bar ───────────────────────────────────────────────────────────
-function ProfileCompletionBar({ value }: { value: number }) {
-  return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 px-6 py-3.5 flex items-center gap-4">
-      <span className="text-sm font-medium text-gray-600 shrink-0">Status kelengkapan profil anda</span>
-      <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
-        <div className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-700" style={{ width: `${value}%` }} />
-      </div>
-      <span className="text-indigo-600 font-bold text-sm w-10 text-right shrink-0">{value}%</span>
-    </div>
-  );
-}
-
-// ─── Info Row ─────────────────────────────────────────────────────────────────
-function InfoRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex flex-col gap-0.5">
-      <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{label}</span>
-      <span className="text-sm text-gray-800 font-medium break-all">{value}</span>
-    </div>
-  );
-}
-
-// ─── Input Field ──────────────────────────────────────────────────────────────
+// ─── Input biasa (termasuk read-only) ───────────────────────────────────────────
 function InputField({
-  label, value, onChange, type = "text", placeholder, showToggle = false,
+  label,
+  name,
+  value,
+  onChange,
+  type = "text",
+  placeholder,
+  required = false,
+  readOnly = false,
 }: {
-  label: string; value: string; onChange: (v: string) => void;
-  type?: string; placeholder?: string; showToggle?: boolean;
+  label: string;
+  name: string;
+  value: string;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  type?: string;
+  placeholder?: string;
+  required?: boolean;
+  readOnly?: boolean;
 }) {
-  const [show, setShow] = useState(false);
-  const inputType = showToggle ? (show ? "text" : "password") : type;
-
+  const baseClass =
+    "px-3 sm:px-4 py-2 border border-gray-200 rounded-xl text-xs sm:text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all w-full bg-white";
+  const readOnlyClass =
+    "px-3 sm:px-4 py-2 border border-gray-100 rounded-xl text-xs sm:text-sm bg-gray-50 text-gray-400 w-full cursor-not-allowed";
   return (
-    <div className="flex flex-col gap-1">
-      <label className="text-xs font-semibold text-gray-500">{label}</label>
+    <div className="flex flex-col gap-2">
+      <label className="text-xs sm:text-sm font-semibold text-gray-700">
+        {label}{" "}
+        {required && !readOnly && <span className="text-red-500">*</span>}
+      </label>
+      {readOnly ? (
+        <input type={type} value={value} readOnly className={readOnlyClass} />
+      ) : (
+        <input
+          type={type}
+          name={name}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          className={baseClass}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── Input password dengan toggle ───────────────────────────────────────────────
+function PasswordField({
+  label,
+  value,
+  onChange,
+  placeholder,
+  show,
+  onToggle,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  show: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      <label className="text-xs sm:text-sm font-semibold text-gray-700">
+        {label}
+      </label>
       <div className="relative">
         <input
-          type={inputType}
+          type={show ? "text" : "password"}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className={`w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-800 bg-white outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all ${showToggle ? "pr-10" : ""}`}
+          className="px-3 sm:px-4 py-2 pr-10 border border-gray-200 rounded-xl text-xs sm:text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all w-full bg-white"
         />
-        {showToggle && (
-          <button type="button" onClick={() => setShow((s) => !s)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition">
-            {show ? <EyeOff size={15} /> : <Eye size={15} />}
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ─── Photo Upload ─────────────────────────────────────────────────────────────
-function PhotoUpload({ currentPhoto, nama, onPhotoChange }: {
-  currentPhoto: string | null; nama: string;
-  onPhotoChange: (file: File | null, preview: string | null) => void;
-}) {
-  const fileRef = useRef<HTMLInputElement>(null);
-  const [preview, setPreview] = useState<string | null>(currentPhoto);
-  const [error, setError] = useState<string | null>(null);
-
-  const handleFile = (file: File) => {
-    setError(null);
-    if (!["image/jpeg", "image/jpg", "image/png"].includes(file.type)) {
-      setError("Format tidak didukung. Gunakan JPG, JPEG, atau PNG."); return;
-    }
-    if (file.size > 2 * 1024 * 1024) {
-      setError("Ukuran foto melebihi batas maksimal 2 MB."); return;
-    }
-    const url = URL.createObjectURL(file);
-    setPreview(url);
-    onPhotoChange(file, url);
-  };
-
-  const handleRemove = () => {
-    setPreview(null); setError(null);
-    onPhotoChange(null, null);
-    if (fileRef.current) fileRef.current.value = "";
-  };
-
-  const initials = nama.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase();
-
-  return (
-    <div className="flex flex-col items-center gap-2">
-      <div className="relative group">
-        <div className="w-20 h-20 rounded-full overflow-hidden ring-4 ring-indigo-100">
-          {preview
-            ? <img src={preview} alt="Foto profil" className="w-full h-full object-cover" />
-            : <div className="w-full h-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center">
-                <span className="text-white text-2xl font-bold">{initials}</span>
-              </div>
-          }
-        </div>
-        <button type="button" onClick={() => fileRef.current?.click()}
-          className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-          <Camera size={20} className="text-white" />
+        <button
+          type="button"
+          onClick={onToggle}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
+        >
+          {show ? <EyeOff size={15} /> : <Eye size={15} />}
         </button>
-        {preview && (
-          <button type="button" onClick={handleRemove}
-            className="absolute -top-0.5 -right-0.5 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-600 transition shadow">
-            <X size={10} />
-          </button>
-        )}
       </div>
-
-      <button type="button" onClick={() => fileRef.current?.click()}
-        className="flex items-center gap-1.5 text-xs text-indigo-600 font-semibold border border-indigo-200 rounded-lg px-3 py-1 hover:bg-indigo-50 transition">
-        <Upload size={11} /> Unggah Foto
-      </button>
-      <p className="text-[10px] text-gray-400 text-center">
-        Format: JPG, JPEG, PNG · <span className="font-semibold text-gray-500">Maks. 2 MB</span>
-      </p>
-      {error && (
-        <div className="flex items-start gap-1 bg-red-50 border border-red-200 rounded-lg px-2.5 py-1.5 w-full max-w-xs">
-          <span className="text-red-500 shrink-0 text-xs">⚠</span>
-          <p className="text-[11px] text-red-600 font-medium leading-snug">{error}</p>
-        </div>
-      )}
-      <input ref={fileRef} type="file" accept=".jpg,.jpeg,.png" className="hidden"
-        onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
     </div>
   );
 }
 
-// ─── Edit Profile View ────────────────────────────────────────────────────────
-function EditProfileView({ profile, onBack, onSave }: {
-  profile: UserProfile;
-  onBack: () => void;
-  onSave: (updated: Partial<UserProfile> & { photoFile?: File | null }) => void;
-}) {
-  const [nama, setNama] = useState(profile.nama);
-  const [nim, setNim] = useState(profile.nim);
-  const [kelas, setKelas] = useState(profile.kelas);
-  const [tahunAngkatan, setTahunAngkatan] = useState(String(profile.tahun_angkatan));
-  const [email, setEmail] = useState(profile.email);
-  const [phone, setPhone] = useState(profile.phone);
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(profile.photo);
+// ─── Loading skeleton ────────────────────────────────────────────────────────────
+function EditSkeleton() {
+  return (
+    <div className="animate-pulse flex flex-col gap-4 sm:gap-5 w-full">
+      <div className="h-40 bg-white rounded-2xl border border-gray-100" />
+      <div className="h-72 bg-white rounded-2xl border border-gray-100" />
+      <div className="h-56 bg-white rounded-2xl border border-gray-100" />
+    </div>
+  );
+}
 
+// ─── Main Page ──────────────────────────────────────────────────────────────────
+export default function EditProfilAlumniPage() {
+  const router = useRouter();
+  const { profile, loading, isSaving, saveProfile, saveAccount } = useProfile();
+
+  const [formData, setFormData] = useState<EditableFields>({
+    name: "",
+    email: "",
+    phone: "",
+    kelas: "",
+    tahun_angkatan: "",
+  });
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+
+  // Password
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [passwordSuccess, setPasswordSuccess] = useState(false);
+  const [showOld, setShowOld] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [isSavingPassword, setIsSavingPassword] = useState(false);
 
-  const handleSaveInfo = () => {
-    onSave({ nama, nim, kelas, tahun_angkatan: Number(tahunAngkatan), email, phone, photo: photoPreview, photoFile });
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  // Isi form dari data database setelah hook selesai fetch
+  useEffect(() => {
+    if (profile && !loading) {
+      setFormData({
+        name: profile.name ?? "",
+        email: profile.email ?? "",
+        phone: profile.phone ?? "",
+        kelas: profile.kelas ?? "",
+        tahun_angkatan: profile.tahun_angkatan
+          ? String(profile.tahun_angkatan)
+          : "",
+      });
+      if (!photoFile) {
+        setPhotoPreview(profile.photo ?? null);
+      }
+    }
+  }, [profile, loading]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errorMessage) setErrorMessage("");
   };
 
-  const handleSavePassword = () => {
-    setPasswordError(null); setPasswordSuccess(false);
-    if (!oldPassword || !newPassword || !confirmPassword) { setPasswordError("Semua field password harus diisi."); return; }
-    if (newPassword.length < 8) { setPasswordError("Password baru minimal 8 karakter."); return; }
-    if (newPassword !== confirmPassword) { setPasswordError("Konfirmasi password tidak cocok."); return; }
-    setPasswordSuccess(true);
-    setOldPassword(""); setNewPassword(""); setConfirmPassword("");
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!["image/jpeg", "image/jpg", "image/png"].includes(file.type)) {
+      setErrorMessage("Format tidak didukung. Gunakan JPG, JPEG, atau PNG.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setErrorMessage("Ukuran file terlalu besar. Maksimal 5MB.");
+      return;
+    }
+    setPhotoFile(file);
+    setPhotoPreview(URL.createObjectURL(file));
+    if (errorMessage) setErrorMessage("");
   };
+
+  // Simpan perubahan profil → PUT /api/account (nama, email) + POST /api/profile (sisanya)
+  const handleSave = async () => {
+    if (!formData.name.trim()) {
+      setErrorMessage("Nama lengkap tidak boleh kosong.");
+      return;
+    }
+    if (!formData.email.trim()) {
+      setErrorMessage("Email tidak boleh kosong.");
+      return;
+    }
+    setErrorMessage("");
+    try {
+      await saveAccount({
+        name: formData.name,
+        email: formData.email,
+      });
+      await saveProfile({
+        phone: formData.phone,
+        kelas: formData.kelas,
+        tahun_angkatan: formData.tahun_angkatan || undefined,
+        photoFile: photoFile,
+      });
+      setSuccessMessage("Profil berhasil diperbarui!");
+      setTimeout(() => router.push("/profil_alumni"), 1200);
+    } catch (err) {
+      setErrorMessage(
+        err instanceof Error
+          ? err.message
+          : "Terjadi kesalahan saat menyimpan.",
+      );
+    }
+  };
+
+  const handleSavePassword = async () => {
+    setPasswordError(null);
+    setPasswordSuccess(false);
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      setPasswordError("Semua field password harus diisi.");
+      return;
+    }
+    if (newPassword.length < 8) {
+      setPasswordError("Password baru minimal 8 karakter.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError("Konfirmasi password tidak cocok.");
+      return;
+    }
+    setIsSavingPassword(true);
+    try {
+      const token = localStorage.getItem("access_token");
+      const res = await fetch(`${API_URL}/api/password`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          old_password: oldPassword,
+          password: newPassword,
+          password_confirmation: confirmPassword,
+        }),
+      });
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson?.message ?? "Gagal memperbarui password.");
+      }
+      setPasswordSuccess(true);
+      setOldPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setTimeout(() => setPasswordSuccess(false), 3000);
+    } catch (err) {
+      setPasswordError(
+        err instanceof Error ? err.message : "Gagal memperbarui password.",
+      );
+    } finally {
+      setIsSavingPassword(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col gap-3">
+        <EditSkeleton />
+      </div>
+    );
+  }
 
   return (
-    <div className="flex flex-col gap-4 w-full">
-      <button onClick={onBack} className="flex items-center gap-2 text-sm text-gray-500 hover:text-indigo-600 transition font-medium w-fit">
-        <ArrowLeft size={15} /> Kembali ke Profil
-      </button>
-
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        {/* Header foto */}
-        <div className="flex flex-col items-center gap-2 py-6 px-6 border-b border-gray-100 bg-gradient-to-b from-indigo-50/50 to-white">
-          <PhotoUpload
-            currentPhoto={profile.photo}
-            nama={profile.nama}
-            onPhotoChange={(f, p) => { setPhotoFile(f); setPhotoPreview(p); }}
-          />
-          <p className="text-sm font-bold text-gray-900 mt-0.5">{nama}</p>
-          <span className={statusConfig[profile.status_magang].className}>{profile.status_magang}</span>
-        </div>
-
-        <div className="px-6 py-3 flex flex-col gap-0">
-          {/* ── Informasi Akun ── */}
-          <section className="flex flex-col gap-2.5 pb-3">
-            <h3 className="text-xs font-bold text-gray-700 uppercase tracking-wider border-l-4 border-indigo-500 pl-2.5">
-              Informasi Akun
-            </h3>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-              <InputField label="Nama Lengkap" value={nama} onChange={setNama} />
-              <InputField label="NIM Mahasiswa" value={nim} onChange={setNim} />
-              <InputField label="Kelas" value={kelas} onChange={setKelas} />
-              <InputField label="Tahun Angkatan" value={tahunAngkatan} onChange={setTahunAngkatan} type="number" />
-              <div className="col-span-2">
-                <InputField label="Email" value={email} onChange={setEmail} type="email" />
-              </div>
-              <div className="col-span-2">
-                <InputField label="No. HP (Opsional)" value={phone} onChange={setPhone} placeholder="08xxxxxxxxxx" />
-              </div>
-            </div>
-            <button onClick={handleSaveInfo}
-              className="self-start bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-all duration-200 shadow-sm">
-              Simpan perubahan
-            </button>
-          </section>
-
-          <hr className="border-gray-100" />
-
-          {/* ── Ganti Password ── */}
-          <section className="flex flex-col gap-2.5 pt-3">
-            <h3 className="text-xs font-bold text-gray-700 uppercase tracking-wider border-l-4 border-indigo-500 pl-2.5">
-              Ganti Password
-            </h3>
-            <div className="grid grid-cols-1 gap-2">
-              <InputField label="Password Lama" value={oldPassword} onChange={setOldPassword} placeholder="Masukkan password lama" showToggle />
-              <InputField label="Password Baru" value={newPassword} onChange={setNewPassword} placeholder="Masukkan password baru" showToggle />
-              <InputField label="Konfirmasi Password Baru" value={confirmPassword} onChange={setConfirmPassword} placeholder="Ulangi password baru" showToggle />
-            </div>
-
-            {passwordError && (
-              <div className="flex items-center gap-1.5 bg-red-50 border border-red-200 rounded-lg px-3 py-1.5">
-                <span className="text-red-500 text-xs">⚠</span>
-                <p className="text-xs text-red-600 font-medium">{passwordError}</p>
-              </div>
-            )}
-            {passwordSuccess && (
-              <div className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-1.5">
-                <span className="text-emerald-500 text-xs">✓</span>
-                <p className="text-xs text-emerald-700 font-medium">Password berhasil diperbarui.</p>
-              </div>
-            )}
-
-            <button onClick={handleSavePassword}
-              className="self-start bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-all duration-200 shadow-sm">
-              Perbarui password
-            </button>
-          </section>
+    <div className="flex flex-col gap-4 sm:gap-5 w-full max-w-7xl mx-auto">
+      {/* Sub-header: back + judul */}
+      <div className="flex items-start sm:items-center gap-3 sm:gap-4">
+        <Link
+          href="/profil_alumni"
+          className="inline-flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-lg hover:bg-gray-100 transition-colors flex-shrink-0 bg-white border border-gray-100 shadow-sm"
+        >
+          <ArrowLeft size={18} className="text-gray-700" />
+        </Link>
+        <div className="min-w-0 flex-1">
+          <h1 className="text-lg sm:text-xl font-bold text-gray-900">
+            Edit Profil
+          </h1>
+          <p className="text-xs sm:text-sm text-gray-600">
+            Perbarui informasi profil dan data kontak Anda
+          </p>
         </div>
       </div>
-    </div>
-  );
-}
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
-export default function ProfilAlumniPage() {
-  const [profile, setProfile] = useState<UserProfile>(getSavedProfile());
-  const router = useRouter();
-
-  const handleSave = (updated: Partial<UserProfile> & { photoFile?: File | null }) => {
-    const { photoFile, ...rest } = updated;
-    const updatedProfile = { ...profile, ...rest };
-    setProfile(updatedProfile);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedProfile));
-    router.push("/profil_alumni");
-  };
-
-  return (
-    <div className="flex min-h-screen bg-[#EEF0F8]">
-      <SidebarAlumni />
-
-      <main className="md:ml-60 flex-1 flex flex-col min-h-screen">
-        {/* Top Bar */}
-        <header className="bg-white border-b border-gray-100 px-8 py-3.5 flex items-center justify-between sticky top-0 z-10 shadow-sm pt-16 md:pt-3.5">
-          <h1 className="text-lg font-bold text-gray-900">Profil Mahasiswa</h1>
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-gray-600">
-              Halo, <span className="font-semibold text-indigo-600">{profile.nama.split(" ")[0]}</span>
-            </span>
-            <Avatar photo={profile.photo} nama={profile.nama} size="sm" />
-          </div>
-        </header>
-
-        {/* Body */}
-       <div className="flex-1 px-6 py-6 flex flex-col gap-4 max-w-5xl w-full mx-auto">
-          <EditProfileView profile={profile} onBack={() => router.push("/profil_alumni")} onSave={handleSave} />
+      {successMessage && (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3 sm:p-4 flex items-center justify-between">
+          <p className="text-xs sm:text-sm font-medium text-emerald-700">
+            {successMessage}
+          </p>
+          <button
+            onClick={() => setSuccessMessage("")}
+            className="text-emerald-600 hover:text-emerald-700 flex-shrink-0 ml-3"
+          >
+            <X size={18} />
+          </button>
         </div>
-      </main>
+      )}
+
+      {errorMessage && (
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-3 sm:p-4 flex items-center justify-between">
+          <p className="text-xs sm:text-sm font-medium text-red-700">
+            {errorMessage}
+          </p>
+          <button
+            onClick={() => setErrorMessage("")}
+            className="text-red-600 hover:text-red-700 flex-shrink-0 ml-3"
+          >
+            <X size={18} />
+          </button>
+        </div>
+      )}
+
+      {/* ── Card Foto Profil ── */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6">
+        <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-4">
+          Foto Profil
+        </h3>
+        <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-6">
+          <div className="flex-shrink-0">
+            <Avatar photo={photoPreview} nama={profile.name || "A"} />
+          </div>
+          <div className="flex flex-col gap-3 flex-1">
+            <label className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors w-fit">
+              <Camera size={18} className="text-indigo-600 flex-shrink-0" />
+              <span className="text-sm font-medium text-gray-700">
+                Ubah Foto
+              </span>
+              <input
+                ref={fileRef}
+                type="file"
+                accept=".jpg,.jpeg,.png"
+                onChange={handlePhotoChange}
+                className="hidden"
+              />
+            </label>
+            <p className="text-xs text-gray-500">
+              Format: JPG, JPEG, PNG. Ukuran maksimal: 5MB
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Card Informasi Pribadi ── */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6">
+        <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-4 sm:mb-6">
+          Informasi Pribadi
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+          <InputField
+            label="Nama Lengkap"
+            name="name"
+            value={formData.name}
+            onChange={handleInputChange}
+            required
+          />
+          {/* NIM tetap dikunci — dipakai buat login, gak boleh diubah dari sini */}
+          <InputField
+            label="NIM"
+            name="nim"
+            value={profile.nim ?? ""}
+            readOnly
+          />
+          <InputField
+            label="Email"
+            name="email"
+            value={formData.email}
+            onChange={handleInputChange}
+            type="email"
+            required
+          />
+          <InputField
+            label="Kelas"
+            name="kelas"
+            value={formData.kelas}
+            onChange={handleInputChange}
+            placeholder="Contoh: IK-3C"
+          />
+          <InputField
+            label="Tahun Angkatan"
+            name="tahun_angkatan"
+            value={formData.tahun_angkatan}
+            onChange={handleInputChange}
+            type="number"
+            placeholder="Contoh: 2022"
+          />
+          <InputField
+            label="No. HP"
+            name="phone"
+            value={formData.phone}
+            onChange={handleInputChange}
+            type="tel"
+            placeholder="08xxxxxxxxxx"
+          />
+        </div>
+        <div className="flex flex-col sm:flex-row gap-3 justify-end mt-6">
+          <button
+            onClick={() => router.push("/profil_alumni")}
+            disabled={isSaving}
+            className="px-4 sm:px-6 py-2 border border-gray-200 rounded-xl text-xs sm:text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-all disabled:opacity-50 order-2 sm:order-1"
+          >
+            Batal
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2 bg-indigo-600 text-white rounded-xl text-xs sm:text-sm font-semibold hover:bg-indigo-700 transition-all disabled:opacity-50 order-1 sm:order-2"
+          >
+            <Save size={16} />
+            {isSaving ? "Menyimpan..." : "Simpan Perubahan"}
+          </button>
+        </div>
+      </div>
+
+      {/* ── Card Ganti Password ── */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6">
+        <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-4 sm:mb-6">
+          Ganti Password
+        </h3>
+        <div className="grid grid-cols-1 gap-4 sm:gap-5">
+          <PasswordField
+            label="Password Lama"
+            value={oldPassword}
+            onChange={setOldPassword}
+            placeholder="Masukkan password lama"
+            show={showOld}
+            onToggle={() => setShowOld((s) => !s)}
+          />
+          <PasswordField
+            label="Password Baru"
+            value={newPassword}
+            onChange={setNewPassword}
+            placeholder="Masukkan password baru"
+            show={showNew}
+            onToggle={() => setShowNew((s) => !s)}
+          />
+          <PasswordField
+            label="Konfirmasi Password Baru"
+            value={confirmPassword}
+            onChange={setConfirmPassword}
+            placeholder="Ulangi password baru"
+            show={showConfirm}
+            onToggle={() => setShowConfirm((s) => !s)}
+          />
+        </div>
+        {passwordError && (
+          <div className="mt-4 bg-red-50 border border-red-200 rounded-2xl px-4 py-3">
+            <p className="text-xs sm:text-sm font-medium text-red-700">
+              {passwordError}
+            </p>
+          </div>
+        )}
+        {passwordSuccess && (
+          <div className="mt-4 bg-emerald-50 border border-emerald-200 rounded-2xl px-4 py-3">
+            <p className="text-xs sm:text-sm font-medium text-emerald-700">
+              ✓ Password berhasil diperbarui!
+            </p>
+          </div>
+        )}
+        <div className="flex flex-col sm:flex-row gap-3 justify-end mt-6">
+          <button
+            onClick={handleSavePassword}
+            disabled={isSavingPassword}
+            className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2 bg-indigo-600 text-white rounded-xl text-xs sm:text-sm font-semibold hover:bg-indigo-700 transition-all disabled:opacity-50"
+          >
+            <Save size={16} />
+            {isSavingPassword ? "Menyimpan..." : "Perbarui Password"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
