@@ -18,6 +18,7 @@ interface RekItem {
   suitability_avg: number;
   matched_skills: string[];
   missing_skills: string[];
+  duration: string | null;
 }
 
 interface Session {
@@ -72,6 +73,13 @@ function RekCard({ item, onDetail }: { item: RekItem; onDetail: () => void }) {
                 <span className="text-gray-300">•</span>
                 <MapPin className="w-3.5 h-3.5 shrink-0" />
                 <span className="truncate">{item.location}</span>
+              </>
+            )}
+            {item.duration && (
+              <>
+                <span className="text-gray-300">•</span>
+                <Clock className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">{item.duration}</span>
               </>
             )}
           </div>

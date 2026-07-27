@@ -44,13 +44,13 @@ export default function Pagination({ currentPage, totalPages, onPageChange }: Pa
         type="button"
         onClick={() => onPageChange(Math.max(1, currentPage - 1))}
         disabled={currentPage === 1}
-        className="inline-flex h-10 min-w-[40px] items-center justify-center rounded-2xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 transition hover:border-indigo-300 hover:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+        className="inline-flex h-10 min-w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 transition hover:border-indigo-300 hover:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
       >
         ‹
       </button>
       {pages.map((item, index) =>
         item === "..." ? (
-          <span key={`dots-${index}`} className="inline-flex h-10 min-w-[40px] items-center justify-center rounded-2xl bg-slate-50 px-3 text-sm text-slate-400">
+          <span key={`dots-${index}`} className="inline-flex h-10 min-w-10 items-center justify-center rounded-2xl bg-slate-50 px-3 text-sm text-slate-400">
             …
           </span>
         ) : (
@@ -58,7 +58,7 @@ export default function Pagination({ currentPage, totalPages, onPageChange }: Pa
             key={item}
             type="button"
             onClick={() => typeof item === "number" && onPageChange(item)}
-            className={`inline-flex h-10 min-w-[40px] items-center justify-center rounded-2xl border px-3 text-sm font-semibold transition ${
+            className={`inline-flex h-10 min-w-10 items-center justify-center rounded-2xl border px-3 text-sm font-semibold transition ${
               item === currentPage
                 ? "border-indigo-600 bg-indigo-600 text-white shadow-sm"
                 : "border-slate-200 bg-white text-slate-600 hover:border-indigo-300 hover:text-indigo-700"
@@ -72,7 +72,7 @@ export default function Pagination({ currentPage, totalPages, onPageChange }: Pa
         type="button"
         onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
         disabled={currentPage === totalPages}
-        className="inline-flex h-10 min-w-[40px] items-center justify-center rounded-2xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 transition hover:border-indigo-300 hover:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+        className="inline-flex h-10 min-w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 transition hover:border-indigo-300 hover:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
       >
         ›
       </button>

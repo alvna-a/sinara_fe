@@ -1,225 +1,209 @@
 "use client";
 // app/(alumni)/profil_alumni/page.tsx
-// Terhubung ke: GET /api/me + GET /api/profile (via useProfile hook)
-//               POST /api/profile (save)
-import { useState, useRef } from "react";
-import { Camera, Pencil, Save, X } from "lucide-react";
-import { useProfile } from "../../../hooks/useProfile";
+// Data dari: GET /api/me + GET /api/profile via useProfile hook
+// Desain disamakan dengan app/(calon)/profil_calon/page.tsx — endpoint tetap
+// endpoint alumni (hook yang sama, dipakai bersama oleh kedua role).
 
-interface EditableFields {
-  phone: string;
-  program_studi: string;
-}
+import { Pencil } from "lucide-react";
+import Link from "next/link";
+import { useProfile } from "@/hooks/useProfile";
 
-export default function ProfilAlumniPage() {
-  const { profile, loading, isSaving, saveProfile } = useProfile();
+// NOTE: SidebarAlumni & MiniFooter DIHAPUS dari sini.
+// app/(alumni)/layout.tsx sudah render SidebarAlumni + DashboardHeader + DashboardMain,
+// dan DashboardMain sendiri sudah render MiniFooter di bawahnya.
 
-  const [editing, setEditing] = useState(false);
-  const [editData, setEditData] = useState<EditableFields>({
-    phone: "",
-    program_studi: "",
-  });
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
-
-  const startEdit = () => {
-    setEditData({ phone: profile.phone, program_studi: profile.program_studi });
-    setPhotoFile(null);
-    setPhotoPreview(null);
-    setSaveError(null);
-    setEditing(true);
-  };
-
-  const cancelEdit = () => {
-    setEditing(false);
-    setPhotoFile(null);
-    setPhotoPreview(null);
-    setSaveError(null);
-  };
-
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setPhotoFile(file);
-    setPhotoPreview(URL.createObjectURL(file));
-  };
-
-  const handleSave = async () => {
-    setSaveError(null);
-    try {
-      await saveProfile({ ...editData, photoFile });
-      setEditing(false);
-    } catch (err: unknown) {
-      setSaveError(err instanceof Error ? err.message : "Gagal menyimpan.");
-    }
-  };
-
-  const avatarSrc = photoPreview ?? profile.photo;
-
-  if (loading) {
+// ─── Sub-components (sama seperti profil_calon) ────────────────────────────────
+function Avatar({ photo, nama }: { photo: string | null; nama: string }) {
+  if (photo) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="text-indigo-400 text-sm animate-pulse">Memuat profil...</div>
-      </div>
+      <img
+        src={photo}
+        alt={nama}
+        className="w-20 h-20 rounded-full object-cover ring-4 ring-indigo-100"
+      />
     );
   }
+  const initials = nama
+    .split(" ")
+    .map((n) => n[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+  return (
+    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center ring-4 ring-indigo-100">
+      <span className="text-white text-2xl font-bold">{initials}</span>
+    </div>
+  );
+}
+
+function ProfileCompletionBar({ value }: { value: number }) {
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 px-6 py-4 flex items-center gap-5">
+      <span className="text-sm font-medium text-gray-700 whitespace-nowrap">
+        Tingkat kelengkapan profil
+      </span>
+      <div className="flex-1 bg-gray-200 rounded-full h-2.5 overflow-hidden">
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-indigo-400 transition-all duration-700"
+          style={{ width: `${value}%` }}
+        />
+      </div>
+      <span className="text-indigo-600 font-bold text-base w-12 text-right">
+        {value}%
+      </span>
+    </div>
+  );
+}
+
+function InfoRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+        {label}
+      </span>
+      <span className="text-sm text-gray-800 font-medium break-all">
+        {value || <span className="text-gray-400 italic">Belum diisi</span>}
+      </span>
+    </div>
+  );
+}
+
+function ProfileSkeleton() {
+  return (
+    <div className="animate-pulse flex flex-col gap-4 sm:gap-5 w-full">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6">
+        <div className="flex items-center gap-5">
+          <div className="w-20 h-20 rounded-full bg-gray-200 flex-shrink-0" />
+          <div className="flex flex-col gap-2 flex-1">
+            <div className="h-7 w-56 bg-gray-200 rounded" />
+            <div className="h-4 w-36 bg-gray-200 rounded" />
+            <div className="h-6 w-24 bg-gray-200 rounded-full" />
+          </div>
+        </div>
+      </div>
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 px-6 py-4">
+        <div className="h-3 w-full bg-gray-200 rounded-full" />
+      </div>
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+        <div className="grid grid-cols-2 gap-6">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="flex flex-col gap-1">
+              <div className="h-3 w-16 bg-gray-200 rounded" />
+              <div className="h-4 w-32 bg-gray-200 rounded" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const statusMagangConfig = {
+  "Belum Magang": {
+    label: "Belum Magang",
+    className:
+      "bg-amber-400 text-white text-xs font-semibold px-4 py-1.5 rounded-full",
+  },
+  "Sedang Magang": {
+    label: "Sedang Magang",
+    className:
+      "bg-blue-500 text-white text-xs font-semibold px-4 py-1.5 rounded-full",
+  },
+  "Selesai Magang": {
+    label: "Selesai Magang",
+    className:
+      "bg-emerald-500 text-white text-xs font-semibold px-4 py-1.5 rounded-full",
+  },
+} as const;
+
+// ─── Main Page ──────────────────────────────────────────────────────────────────
+export default function ProfilAlumniPage() {
+  const { profile, loading, error } = useProfile();
+
+  const statusKey =
+    (profile?.status_magang as keyof typeof statusMagangConfig) ??
+    "Selesai Magang";
+  const status =
+    statusMagangConfig[statusKey] ?? statusMagangConfig["Selesai Magang"];
 
   return (
-    <>
-        <div className="max-w-3xl mx-auto space-y-5 py-6">
+    <div className="flex flex-col gap-4 sm:gap-5 w-full">
+      {/* Error global */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3">
+          {error}
+        </div>
+      )}
 
-          {/* Card Profil */}
-          <div className="bg-white rounded-2xl shadow-sm p-6 sm:p-8">
-            <div className="flex items-start justify-between mb-6">
-              <h2 className="text-lg font-bold text-gray-900">Data Pribadi</h2>
-              {!editing ? (
-                <button
-                  onClick={startEdit}
-                  className="flex items-center gap-2 rounded-xl border border-indigo-200 px-4 py-2 text-sm font-semibold text-indigo-600 hover:bg-indigo-50 transition"
-                >
-                  <Pencil size={14} /> Edit
-                </button>
-              ) : (
-                <div className="flex gap-2">
-                  <button
-                    onClick={cancelEdit}
-                    className="flex items-center gap-1.5 rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-500 hover:bg-gray-50 transition"
-                  >
-                    <X size={14} /> Batal
-                  </button>
-                  <button
-                    onClick={handleSave}
-                    disabled={isSaving}
-                    className="flex items-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 py-2 text-sm font-semibold text-white transition disabled:opacity-50"
-                  >
-                    <Save size={14} />
-                    {isSaving ? "Menyimpan..." : "Simpan"}
-                  </button>
+      {loading ? (
+        <ProfileSkeleton />
+      ) : (
+        <>
+          {/* Card: Avatar + nama + tombol Edit */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 sm:gap-6">
+              {/* Kiri: avatar + info */}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-5 min-w-0">
+                <div className="flex-shrink-0">
+                  <Avatar photo={profile.photo} nama={profile.name || "?"} />
                 </div>
-              )}
-            </div>
-
-            {saveError && (
-              <div className="mb-4 rounded-xl bg-red-50 border border-red-200 px-4 py-2 text-sm text-red-600">
-                {saveError}
-              </div>
-            )}
-
-            <div className="flex flex-col sm:flex-row gap-6">
-              {/* Avatar */}
-              <div className="flex flex-col items-center gap-2">
-                <div className="relative">
-                  <div className="w-24 h-24 rounded-2xl bg-indigo-100 overflow-hidden flex items-center justify-center">
-                    {avatarSrc ? (
-                      <img src={avatarSrc} alt="foto profil" className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-3xl font-bold text-indigo-400">
-                        {profile.name?.charAt(0) ?? "?"}
-                      </span>
-                    )}
-                  </div>
-                  {editing && (
-                    <>
-                      <button
-                        onClick={() => fileRef.current?.click()}
-                        className="absolute -bottom-2 -right-2 w-7 h-7 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow hover:bg-indigo-700 transition"
-                      >
-                        <Camera size={13} />
-                      </button>
-                      <input
-                        ref={fileRef}
-                        type="file"
-                        accept="image/jpg,image/jpeg,image/png"
-                        className="hidden"
-                        onChange={handlePhotoChange}
-                      />
-                    </>
-                  )}
-                </div>
-                <div className="text-center">
-                  <p className="text-xs text-gray-500 mb-1">Kelengkapan Profil</p>
-                  <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-indigo-500 rounded-full transition-all duration-500"
-                      style={{ width: `${profile.kelengkapan_profil}%` }}
-                    />
-                  </div>
-                  <p className="text-xs font-bold text-indigo-600 mt-1">
-                    {profile.kelengkapan_profil}%
+                <div className="flex flex-col gap-2 min-w-0">
+                  <h2 className="text-xl sm:text-2xl font-extrabold text-gray-900 leading-tight">
+                    {profile.name || "-"}
+                  </h2>
+                  <p className="text-xs sm:text-sm text-gray-500 font-medium">
+                    Alumni Magang
+                    {profile.kelas ? ` • ${profile.kelas}` : ""}
                   </p>
+                  <span className={status.className}>{status.label}</span>
                 </div>
               </div>
 
-              {/* Fields */}
-              <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                {/* Read-only */}
-                {[
-                  { label: "Nama Lengkap", value: profile.name },
-                  { label: "NIM", value: profile.nim },
-                  { label: "Email", value: profile.email },
-                  { label: "Role", value: "Alumni Magang" },
-                ].map((f) => (
-                  <div key={f.label} className="flex flex-col gap-1">
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{f.label}</p>
-                    <p className="font-medium text-gray-800">{f.value || <span className="text-gray-400 italic">-</span>}</p>
-                  </div>
-                ))}
-
-                {/* Editable: No HP */}
-                <div className="flex flex-col gap-1">
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">No. HP</p>
-                  {editing ? (
-                    <input
-                      type="tel"
-                      value={editData.phone}
-                      onChange={(e) => setEditData((p) => ({ ...p, phone: e.target.value }))}
-                      placeholder="08xxxxxxxxxx"
-                      className="rounded-xl border border-indigo-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
-                    />
-                  ) : (
-                    <p className="font-medium text-gray-800">
-                      {profile.phone || <span className="text-gray-400 italic">Belum diisi</span>}
-                    </p>
-                  )}
-                </div>
-
-                {/* Editable: Program Studi */}
-                <div className="flex flex-col gap-1">
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Program Studi</p>
-                  {editing ? (
-                    <select
-                      value={editData.program_studi}
-                      onChange={(e) => setEditData((p) => ({ ...p, program_studi: e.target.value }))}
-                      className="rounded-xl border border-indigo-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
-                    >
-                      <option value="">Pilih...</option>
-                      {["D3 Teknik Informatika", "D4 Teknik Informatika", "D3 Sistem Informasi"].map((o) => (
-                        <option key={o} value={o}>{o}</option>
-                      ))}
-                    </select>
-                  ) : (
-                    <p className="font-medium text-gray-800">
-                      {profile.program_studi || <span className="text-gray-400 italic">Belum diisi</span>}
-                    </p>
-                  )}
-                </div>
-              </div>
+              {/* Kanan: tombol Edit */}
+              <Link
+                href="/profil_alumni/edit_profil"
+                className="flex items-center justify-center sm:justify-start gap-2 border border-gray-200 rounded-xl px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:border-indigo-300 hover:text-indigo-600 transition-all duration-200 shadow-sm whitespace-nowrap self-start"
+              >
+                <Pencil size={15} />
+                Edit Profil
+              </Link>
             </div>
           </div>
 
-          {/* Info box feedback */}
+          {/* Completion bar */}
+          <ProfileCompletionBar value={profile.kelengkapan_profil} />
+
+          {/* Card: Grid info detail */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-x-12 gap-y-4 sm:gap-y-6">
+              <InfoRow label="NIM" value={profile.nim ?? "-"} />
+              <InfoRow label="Email" value={profile.email || "-"} />
+              <InfoRow label="Kelas" value={profile.kelas ?? "-"} />
+              <InfoRow label="No. HP" value={profile.phone || "-"} />
+              <InfoRow
+                label="Tahun Angkatan"
+                value={
+                  profile.tahun_angkatan ? String(profile.tahun_angkatan) : "-"
+                }
+              />
+              <InfoRow label="Role" value="Alumni Magang" />
+            </div>
+          </div>
+
+          {/* Info box — khusus alumni, ajakan bagikan pengalaman */}
           <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-5 text-sm text-indigo-700">
             <p className="font-semibold mb-1">Bagikan Pengalamanmu 🎓</p>
             <p className="text-indigo-600 leading-relaxed">
               Sebagai alumni, pengalaman magang kamu sangat berharga untuk adik-adik yang sedang
               mencari tempat magang. Yuk bagikan melalui menu{" "}
-              <strong>Input Feedback</strong>!
+              <Link href="/input_feedback" className="font-semibold underline underline-offset-2">
+                Input Feedback
+              </Link>
+              !
             </p>
           </div>
-
-        </div>
-    </>
+        </>
+      )}
+    </div>
   );
 }

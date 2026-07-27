@@ -18,11 +18,11 @@ export function StepIndicatorRekom({ currentStep }: Props) {
   return (
     <div className="w-full mb-8">
       {/* Progress bar track */}
-      <div className="relative flex items-center mb-3">
+      <div className="relative flex items-center justify-between mb-3 px-1">
         {STEPS.map((_, idx) => {
           const stepNum = idx + 1;
           const isCompleted = currentStep > stepNum;
-          const isActive    = currentStep === stepNum;
+          const isActive = currentStep === stepNum;
 
           return (
             <div key={stepNum} className="flex items-center flex-1 last:flex-none">
@@ -56,19 +56,21 @@ export function StepIndicatorRekom({ currentStep }: Props) {
         })}
       </div>
 
-      {/* Labels */}
-      <div className="flex items-start">
+      {/* Labels — width-independent from the circle row so long text has room to breathe */}
+      <div className="flex justify-between">
         {STEPS.map((step, idx) => {
-          const stepNum  = idx + 1;
+          const stepNum = idx + 1;
           const isActive = currentStep === stepNum;
-          const isDone   = currentStep > stepNum;
+          const isDone = currentStep > stepNum;
+          const isFirst = idx === 0;
+          const isLast = idx === STEPS.length - 1;
 
           return (
             <div
               key={stepNum}
-              className={`flex-1 last:flex-none text-center text-[11px] font-medium leading-tight px-1
+              className={`w-24 text-[11px] font-medium leading-tight
+                ${isFirst ? "text-left" : isLast ? "text-right" : "text-center"}
                 ${isActive ? "text-indigo-600" : isDone ? "text-gray-500" : "text-gray-400"}`}
-              style={idx === STEPS.length - 1 ? { textAlign: "right" } : idx === 0 ? { textAlign: "left" } : {}}
             >
               {step.label}
             </div>

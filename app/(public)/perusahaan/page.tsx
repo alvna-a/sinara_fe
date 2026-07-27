@@ -3,13 +3,13 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Pagination from "@/components/ui/pagination";
+import { FilterDivisi, FilterLokasi, FilterDurasi, FilterRating } from "@/components/filter";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface Division {
   id: number;
   name: string;
 }
-
 interface Company {
   id: number;
   name: string;
@@ -21,7 +21,6 @@ interface Company {
   avg_rating: number;
   divisions: Division[];
 }
-
 interface ApiMeta {
   current_page: number;
   last_page: number;
@@ -30,34 +29,41 @@ interface ApiMeta {
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
 
-const LOWONGAN_OPTIONS = ["Semua Lowongan", "Product", "Engineering", "Data", "Design", "Marketing", "Finance"];
-const LOKASI_OPTIONS   = ["Lokasi", "Jakarta Selatan", "Jakarta Barat", "Jakarta Pusat", "Bandung", "Semarang"];
-const DURASI_OPTIONS   = ["Durasi Magang", "1 Bulan", "2 Bulan", "3 Bulan", "4 Bulan", "6 Bulan"];
-const RATING_OPTIONS   = ["Rating Perusahaan", "5 Bintang", "4+ Bintang", "3+ Bintang"];
-
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-function StarRating({ rating }: { rating: number }) {
-  return (
-    <div className="flex items-center gap-0.5">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <svg key={star} className={`w-4 h-4 ${star <= Math.round(rating) ? "text-yellow-400" : "text-gray-300"}`} fill="currentColor" viewBox="0 0 20 20">
-          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-        </svg>
-      ))}
-    </div>
+function StarRating({ rating, size = "sm" }: { rating: number; size?: "sm" | "md" }) {
+  const cls = size === "md" ? "w-5 h-5" : "w-4 h-4";
+  // Persentase pengisian total (0-100), dipakai buat clip overlay bintang kuning
+  // di atas bintang abu-abu -- ini yang bikin bintang ke-5 misalnya cuma
+  // "keisi separuh" kalau rating 4.5, bukan langsung dibulatin jadi penuh.
+  const pct = Math.max(0, Math.min(100, (rating / 5) * 100));
+ 
+  const StarPath = () => (
+    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
   );
-}
-
-function FilterSelect({ options, value, onChange }: { options: string[]; value: string; onChange: (v: string) => void }) {
+ 
   return (
-    <div className="relative">
-      <select value={value} onChange={(e) => onChange(e.target.value)}
-        className="appearance-none w-full text-sm text-gray-600 bg-white border border-gray-200 rounded-xl px-4 py-2.5 pr-8 focus:outline-none focus:ring-2 focus:ring-indigo-400 cursor-pointer">
-        {options.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
-      </select>
-      <svg className="w-4 h-4 absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-      </svg>
+    <div className="flex items-center gap-1">
+      <div className="relative inline-flex">
+        {/* Layer bawah: 5 bintang abu-abu, selalu penuh sebagai "wadah" */}
+        <div className="flex gap-0.5">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <svg key={star} className={`${cls} text-gray-300`} fill="currentColor" viewBox="0 0 20 20">
+              <StarPath />
+            </svg>
+          ))}
+        </div>
+        {/* Layer atas: 5 bintang kuning, di-clip lebar sesuai persentase rating */}
+        <div className="absolute inset-0 flex gap-0.5 overflow-hidden" style={{ width: `${pct}%` }}>
+          {[1, 2, 3, 4, 5].map((star) => (
+            <svg key={star} className={`${cls} text-yellow-400 flex-shrink-0`} fill="currentColor" viewBox="0 0 20 20">
+              <StarPath />
+            </svg>
+          ))}
+        </div>
+      </div>
+      <span className={`ml-1 font-semibold ${size === "md" ? "text-base" : "text-sm"} text-gray-700`}>
+        {rating.toFixed(1)}/5
+      </span>
     </div>
   );
 }
@@ -73,7 +79,6 @@ function CompanyLogo({ company, size = "md" }: { company: Company; size?: "md" |
     </div>
   );
 }
-
 function GridCard({ company }: { company: Company }) {
   return (
     <Link href={`/perusahaan/${company.id}`}>
@@ -105,7 +110,6 @@ function GridCard({ company }: { company: Company }) {
     </Link>
   );
 }
-
 function ListCard({ company }: { company: Company }) {
   return (
     <Link href={`/perusahaan/${company.id}`}>
@@ -131,7 +135,6 @@ function ListCard({ company }: { company: Company }) {
     </Link>
   );
 }
-
 function SkeletonGrid() {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -149,43 +152,41 @@ function SkeletonGrid() {
   );
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
+// ─── Main ────────────────────────────────────────────────────────────────────
 export default function PerusahaanPage() {
-  const [search, setSearch]     = useState("");
-  const [lowongan, setLowongan] = useState("Semua Lowongan");
-  const [lokasi, setLokasi]     = useState("Lokasi");
-  const [durasi, setDurasi]     = useState("Durasi Magang");
-  const [rating, setRating]     = useState("Rating Perusahaan");
+  const [search, setSearch] = useState("");
+  // ✅ Sekarang value filter LANGSUNG berupa value backend ("" = semua),
+  // bukan label tampilan lagi. Mapping label -> value hidup di masing-masing
+  // component filter (components/filter/*), jadi gak ada lagi celah lupa mapping.
+  const [divisi, setDivisi] = useState("");
+  const [lokasi, setLokasi] = useState("");
+  const [durasi, setDurasi] = useState("");
+  const [rating, setRating] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [page, setPage]         = useState(1);
+  const [page, setPage] = useState(1);
   const [companies, setCompanies] = useState<Company[]>([]);
-  const [meta, setMeta]           = useState<ApiMeta>({ current_page: 1, last_page: 1, total: 0 });
-  const [loading, setLoading]     = useState(true);
-  const [error, setError]         = useState<string | null>(null);
+  const [meta, setMeta] = useState<ApiMeta>({ current_page: 1, last_page: 1, total: 0 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => { setPage(1); }, [search, lowongan, lokasi, durasi, rating]);
+  useEffect(() => { setPage(1); }, [search, divisi, lokasi, durasi, rating]);
 
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true);
     setError(null);
-
     const perPage = 30;
     const params = new URLSearchParams({ page: String(page), per_page: String(perPage) });
-    if (search)                        params.set("search", search);
-    if (lokasi !== "Lokasi")           params.set("kota", lokasi);
-    if (lowongan !== "Semua Lowongan") params.set("divisi", lowongan);
-    if (durasi !== "Durasi Magang")    params.set("durasi", durasi);
-    if (rating === "5 Bintang")        params.set("min_rating", "5");
-    if (rating === "4+ Bintang")       params.set("min_rating", "4");
-    if (rating === "3+ Bintang")       params.set("min_rating", "3");
+    if (search) params.set("search", search);
+    if (lokasi) params.set("kota", lokasi);
+    if (divisi) params.set("divisi", divisi);
+    if (durasi) params.set("durasi", durasi);
+    if (rating) params.set("min_rating", rating);
 
     fetch(`${API_BASE}/companies?${params}`, { signal: controller.signal })
       .then((r) => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); })
       .then((json) => {
         const list = json.data ?? [];
-
-        // If API provides meta, use server-side pagination data
         if (json.meta || json.current_page || json.last_page || json.total) {
           setCompanies(list);
           setMeta({
@@ -195,8 +196,6 @@ export default function PerusahaanPage() {
           });
           return;
         }
-
-        // Fallback: API returned full list without pagination -> paginate on client
         const total = list.length;
         const last_page = Math.max(1, Math.ceil(total / perPage));
         const start = (page - 1) * perPage;
@@ -206,9 +205,8 @@ export default function PerusahaanPage() {
       })
       .catch((err) => { if (err.name !== "AbortError") setError("Gagal memuat data. Coba lagi."); })
       .finally(() => setLoading(false));
-
     return () => controller.abort();
-  }, [search, lowongan, lokasi, durasi, rating, page]);
+  }, [search, divisi, lokasi, durasi, rating, page]);
 
   return (
     <div className="min-h-screen bg-[#F0F2FA]">
@@ -221,7 +219,6 @@ export default function PerusahaanPage() {
           </p>
         </div>
       </div>
-
       <div className="max-w-5xl mx-auto px-6 md:px-12 py-8">
         {/* Filter box */}
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 mb-6">
@@ -238,13 +235,12 @@ export default function PerusahaanPage() {
             </button>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <FilterSelect options={LOWONGAN_OPTIONS} value={lowongan} onChange={setLowongan} />
-            <FilterSelect options={LOKASI_OPTIONS}   value={lokasi}   onChange={setLokasi} />
-            <FilterSelect options={DURASI_OPTIONS}   value={durasi}   onChange={setDurasi} />
-            <FilterSelect options={RATING_OPTIONS}   value={rating}   onChange={setRating} />
+            <FilterDivisi value={divisi} onChange={setDivisi} />
+            <FilterLokasi value={lokasi} onChange={setLokasi} />
+            <FilterDurasi value={durasi} onChange={setDurasi} />
+            <FilterRating value={rating} onChange={setRating} />
           </div>
         </div>
-
         {/* Toggle & count */}
         <div className="flex items-center justify-between mb-4">
           <p className="text-sm text-gray-500">{loading ? "Memuat..." : `${meta.total} perusahaan ditemukan`}</p>
@@ -257,13 +253,11 @@ export default function PerusahaanPage() {
             </button>
           </div>
         </div>
-
         {error && <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-4 py-3 mb-4">{error}</div>}
-
         {loading ? <SkeletonGrid /> : companies.length === 0 ? (
           <div className="text-center py-20">
             <p className="text-gray-400 text-sm">Perusahaan tidak ditemukan.</p>
-            <button onClick={() => { setSearch(""); setLowongan("Semua Lowongan"); setLokasi("Lokasi"); setDurasi("Durasi Magang"); setRating("Rating Perusahaan"); }}
+            <button onClick={() => { setSearch(""); setDivisi(""); setLokasi(""); setDurasi(""); setRating(""); }}
               className="mt-3 text-indigo-600 text-sm hover:underline">Reset filter</button>
           </div>
         ) : viewMode === "grid" ? (
@@ -275,11 +269,9 @@ export default function PerusahaanPage() {
             {companies.map((c) => <ListCard key={c.id} company={c} />)}
           </div>
         )}
-
-        {/* Pagination */}
-        {!loading && meta.last_page > 1 && (
+        {!loading && companies.length > 0 && (
           <div className="mt-8">
-            <Pagination currentPage={page} totalPages={meta.last_page} onPageChange={setPage} />
+            <Pagination currentPage={meta.current_page} totalPages={meta.last_page} onPageChange={setPage} />
           </div>
         )}
       </div>

@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { Pencil } from "lucide-react";
 import Link from "next/link";
-// NOTE: SidebarAdmin & header custom (greeting "Halo, {nama}") DIHAPUS dari sini.
+
+// NOTE: SidebarAdmin & header custom ("Halo, {nama}") DIHAPUS dari sini.
 // app/(admin)/layout.tsx sudah render SidebarAdmin + DashboardHeader + DashboardMain,
 // dan DashboardHeader sendiri sudah nampilin nama user + dropdown di kanan atas.
 // Kalau dirender lagi di sini, sidebar/header dobel + padding numpuk.
@@ -38,25 +39,29 @@ const defaultProfile: AdminProfile = {
 };
 
 // ─── Hitung kelengkapan profil ─────────────────────────────────────────────
-function hitungKelengkapan(user: any, profile: any): number {
-  const fields = [
-    user?.name,
-    user?.email,
-    user?.nim,
-    profile?.phone,
-    profile?.photo,
-    profile?.program_studi,
-    profile?.semester,
-  ];
+// ✅ FIX (v2): percobaan pertama sempat masukin user.jabatan & user.unit ke
+// rumus ini — TERNYATA keduanya bukan field asli sama sekali. Tabel `users`
+// di database cuma punya kolom name/nim/email/password/role, gak ada
+// jabatan/unit/status_kerja. Teks "Administrator" / "Administrasi" yang
+// muncul di layar itu hardcoded fallback di fetchProfileFromAPI() di bawah
+// (`user.jabatan ?? "Administrator"`), BUKAN data dari server — dan halaman
+// Edit Profil Admin juga gak punya input buat itu. Jadi ngitung field yang
+// gak pernah bisa "diisi" secara nyata cuma bikin skor makin gak akurat.
+// Sekarang cuma ngitung 4 field yang beneran ada di database DAN beneran
+// bisa diisi lewat form edit: nama, email, no. HP, foto.
+function hitungKelengkapan(
+  user: Record<string, unknown>,
+  profile: Record<string, unknown>,
+): number {
+  const fields = [user?.name, user?.email, profile?.phone, profile?.photo];
   const filled = fields.filter(Boolean).length;
   return Math.round((filled / fields.length) * 100);
 }
 
-// ─── Fetch profil dari API ──────────────────────────────────────────────────
+// ─── Fetch profil dari API ───────────────────────────────────────────────────
 async function fetchProfileFromAPI(): Promise<AdminProfile> {
   const token = localStorage.getItem("access_token");
   if (!token) return defaultProfile;
-
   try {
     const [resMe, resProfile] = await Promise.all([
       fetch(`${API_URL}/api/me`, {
@@ -66,19 +71,16 @@ async function fetchProfileFromAPI(): Promise<AdminProfile> {
         headers: { Authorization: `Bearer ${token}` },
       }),
     ]);
-
     if (!resMe.ok) {
       localStorage.removeItem("access_token");
       return defaultProfile;
     }
-
     const user = await resMe.json();
     const profileJson = resProfile.ok ? await resProfile.json() : { data: {} };
     const profileData = profileJson?.data?.profile ?? profileJson?.data ?? {};
     const photoUrl = profileData?.photo
       ? `${API_URL}/storage/${profileData.photo}`
       : null;
-
     return {
       id_admin: `ADM-${String(user.id).padStart(3, "0")}`,
       nama: user.name ?? defaultProfile.nama,
@@ -97,7 +99,7 @@ async function fetchProfileFromAPI(): Promise<AdminProfile> {
   }
 }
 
-// ─── Status config ──────────────────────────────────────────────────────────
+// ─── Status config ───────────────────────────────────────────────────────────
 const statusConfig = {
   Aktif: {
     label: "Aktif",
@@ -116,7 +118,7 @@ const statusConfig = {
   },
 } as const;
 
-// ─── Sub-components ─────────────────────────────────────────────────────────
+// ─── Sub-components ──────────────────────────────────────────────────────────
 function Avatar({ photo, nama }: { photo: string | null; nama: string }) {
   if (photo) {
     return (
@@ -200,7 +202,7 @@ function ProfileSkeleton() {
   );
 }
 
-// ─── Main Page ───────────────────────────────────────────────────────────────
+// ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function ProfilAdminPage() {
   const [profile, setProfile] = useState<AdminProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -247,7 +249,6 @@ export default function ProfilAdminPage() {
           {error}
         </div>
       )}
-
       {loading ? (
         <ProfileSkeleton />
       ) : profile ? (
@@ -277,9 +278,7 @@ export default function ProfilAdminPage() {
               </Link>
             </div>
           </div>
-
           <ProfileCompletionBar value={profile.kelengkapan_profil} />
-
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-x-12 gap-y-4 sm:gap-y-6">
               <InfoRow label="ID Admin" value={profile.id_admin} />

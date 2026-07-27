@@ -348,8 +348,7 @@ export function Step1SkillDivisi({ data, onChange, onNext }: Props) {
       <div className="flex items-center justify-between pt-2 border-t border-gray-100">
         <p className="text-xs text-gray-500 max-w-xs">
           <span className="text-red-500 font-semibold">(*)</span> Form wajib diisi
-          dan apabila field kosong akan menampilkan border merah dan pesan error di
-          bawahnya.
+          dan tidak bisa dikosongkan.
         </p>
         <button
           type="button"

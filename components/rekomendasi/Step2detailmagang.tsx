@@ -127,12 +127,12 @@ export function Step2DetailMagang({ data, onChange, onNext, onBack }: Props) {
             placeholder={
               data.locations.length < 3
                 ? "Ketik atau pilih lokasi…"
-                : "Maksimal 3 lokasi"
+                : "Pilih lokasi sesuai kebutuhan."
             }
             disabled={data.locations.length >= 3}
             className="flex-1 outline-none text-sm text-gray-800 placeholder-gray-400 bg-transparent disabled:cursor-not-allowed"
           />
-          <span className="text-xs text-gray-400 shrink-0">Cari divisi</span>
+          <span className="text-xs text-gray-400 shrink-0">Cari lokasi</span>
         </div>
 
         {/* Dropdown suggestions */}
@@ -244,8 +244,7 @@ export function Step2DetailMagang({ data, onChange, onNext, onBack }: Props) {
       <div className="flex items-center justify-between pt-2 border-t border-gray-100">
         <p className="text-xs text-gray-500 max-w-xs">
           <span className="text-red-500 font-semibold">(*)</span> Form wajib diisi
-          dan apabila field kosong akan menampilkan border merah dan pesan error di
-          bawahnya.
+          dan tidak bisa dikosongkan.
         </p>
         <div className="flex items-center gap-3">
           <button

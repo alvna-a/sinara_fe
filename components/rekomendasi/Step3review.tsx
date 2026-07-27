@@ -62,8 +62,7 @@ export function Step3Review({ step1, step2, onSubmit, onBack, isLoading }: Props
       <div className="flex items-center justify-between pt-2 border-t border-gray-100">
         <p className="text-xs text-gray-500 max-w-xs">
           <span className="text-red-500 font-semibold">(*)</span> Form wajib diisi
-          dan apabila field kosong akan menampilkan border merah dan pesan error di
-          bawahnya.
+          dan tidak bisa dikosongkan.
         </p>
         <div className="flex items-center gap-3">
           <button

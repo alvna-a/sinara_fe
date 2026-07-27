@@ -36,6 +36,10 @@ export default function RegisterPage() {
 
   const handleStep1 = (e: React.FormEvent) => {
     e.preventDefault();
+    if (password.length < 8) {
+      alert("Password minimal 8 karakter!");
+      return;
+    }
     if (password !== confirmPassword) {
       alert("Password tidak cocok!");
       return;
@@ -148,22 +152,30 @@ export default function RegisterPage() {
         {/* Right Panel */}
         <div className="flex-1 px-8 py-10 flex flex-col justify-center">
           <div className="max-w-sm mx-auto w-full">
-            <div className="flex items-center gap-2 mb-4">
-              {step === 2 && (
-                <button
-                  type="button"
-                  aria-label="Kembali ke Step 1"
-                  onClick={() => setStep(1)}
-                  className="flex items-center justify-center w-7 h-7 rounded-full hover:bg-indigo-100 transition"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 text-indigo-600">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-                  </svg>
-                </button>
-              )}
-              <span className="inline-block text-xs font-medium text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
-                Step {step} dari 2
-              </span>
+            <div className="flex items-center justify-between gap-2 mb-4">
+              <div className="flex items-center gap-2">
+                {step === 2 && (
+                  <button
+                    type="button"
+                    aria-label="Kembali ke Step 1"
+                    onClick={() => setStep(1)}
+                    className="flex items-center justify-center w-7 h-7 rounded-full hover:bg-indigo-100 transition"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 text-indigo-600">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                    </svg>
+                  </button>
+                )}
+                <span className="inline-block text-xs font-medium text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
+                  Step {step} dari 2
+                </span>
+              </div>
+              <Link
+                href="/"
+                className="text-xs font-medium text-gray-400 hover:text-indigo-600 transition"
+              >
+                ← Kembali ke Beranda
+              </Link>
             </div>
 
             {step === 1 ? (
@@ -210,7 +222,7 @@ export default function RegisterPage() {
                       <label className="text-sm font-medium text-gray-700">NIM</label>
                       <input
                         type="text"
-                        placeholder="Masukkan NIM"
+                        placeholder="Tanpa titik atau spasi"
                         value={nim}
                         onChange={(e) => setNim(e.target.value)}
                         required
@@ -221,7 +233,7 @@ export default function RegisterPage() {
                       <label className="text-sm font-medium text-gray-700">Email Universitas</label>
                       <input
                         type="email"
-                        placeholder="nama@student.ac.id"
+                        placeholder="nama@mhs.polines.ac.id"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
@@ -241,6 +253,7 @@ export default function RegisterPage() {
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           required
+                          minLength={8}
                           className="w-full px-4 py-2.5 pr-12 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
                         />
                         <button
@@ -251,6 +264,7 @@ export default function RegisterPage() {
                           {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                         </button>
                       </div>
+                      <p className="text-xs text-gray-400">Minimal 8 karakter</p>
                     </div>
                     {/* Konfirmasi Password */}
                     <div className="flex flex-col gap-1.5">

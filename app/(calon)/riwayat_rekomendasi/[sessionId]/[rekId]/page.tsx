@@ -35,6 +35,7 @@ interface DetailData {
   total_skills: number;
   area_project: string[];
   reviews: ReviewItem[];
+  duration: string | null;
 }
 function pct(score: number) {
   return `${Math.round(score * 100)}`;
@@ -84,7 +85,7 @@ export default function DetailRekomendasiPage() {
         if (json.data?.division_id && token) {
           try {
             const checkRes = await fetch(
-              `${API_BASE}/wishlist/check/${json.data.division_id}`,
+              `${API_BASE}/wishlist/check/division/${json.data.division_id}`,
               {
                 headers: {
                   Accept: "application/json",
@@ -123,7 +124,7 @@ export default function DetailRekomendasiPage() {
     setWishlistError(null);
     try {
       if (savedWishlist) {
-        const res = await fetch(`${API_BASE}/wishlist/${data.division_id}`, {
+        const res = await fetch(`${API_BASE}/wishlist/division/${data.division_id}`, {
           method: "DELETE",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -221,6 +222,12 @@ export default function DetailRekomendasiPage() {
                       <span className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-gray-50 border border-gray-200 text-gray-600">
                         <MapPin className="w-3.5 h-3.5" />
                         {data.location}
+                      </span>
+                    )}
+                    {data.duration && (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-gray-50 border border-gray-200 text-gray-600">
+                        <Clock className="w-3.5 h-3.5" />
+                        {data.duration}
                       </span>
                     )}
                   </div>

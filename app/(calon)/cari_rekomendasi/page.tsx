@@ -66,41 +66,30 @@ export default function CariRekomendasiPage() {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       };
 
-      // ── Step A: Simpan skill user ke DB dulu ────────────────────────────────
-      // BE (RecommendationController@generate) tidak baca skills dari request body.
-      // Dia load dari relasi user->skills di DB. Jadi harus sync dulu lewat endpoint ini.
       const skillRes = await fetch(`${API_BASE}/skills/user`, {
         method: "POST",
         headers,
         body: JSON.stringify({ skills: step1Data.skills }),
       });
-
       if (!skillRes.ok) {
         const err = await skillRes.json().catch(() => ({}));
-        throw new Error(
-          err?.message ?? `Gagal menyimpan skill (${skillRes.status})`
-        );
+        throw new Error(err?.message ?? `Gagal menyimpan skill (${skillRes.status})`);
       }
 
-      // ── Step B: Generate rekomendasi ────────────────────────────────────────
-      // BE hanya terima passion_division sebagai string tunggal.
-      // Kirim divisi pertama yang dipilih user.
       const rekomRes = await fetch(`${API_BASE}/recommendations`, {
         method: "POST",
         headers,
         body: JSON.stringify({
-          passion_division: step1Data.divisions[0] ?? "",
+          passion_divisions: step1Data.divisions,
+          preferred_locations: step2Data.locations,
+          preferred_duration: step2Data.durasi,
         }),
       });
-
       if (!rekomRes.ok) {
         const err = await rekomRes.json().catch(() => ({}));
-        throw new Error(
-          err?.message ?? `Gagal generate rekomendasi (${rekomRes.status})`
-        );
+        throw new Error(err?.message ?? `Gagal generate rekomendasi (${rekomRes.status})`);
       }
 
-      // ── Navigasi ke halaman hasil ───────────────────────────────────────────
       router.push("/riwayat_rekomendasi");
     } catch (err: unknown) {
       notify(err instanceof Error ? err.message : "Gagal generate rekomendasi.", {

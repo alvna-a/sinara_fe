@@ -4,30 +4,9 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { CompanyGridCard, Company } from "@/components/recommendation/CompanyGridCard";
 import { useProfile } from "@/hooks/useProfile";
+import { FilterDivisi, FilterLokasi, FilterDurasi, FilterRating } from "@/components/filter";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
-
-const LOWONGAN_OPTIONS = ["Semua Lowongan", "Product", "Engineering", "Data", "Design", "Marketing", "Finance"];
-const LOKASI_OPTIONS   = ["Lokasi", "Jakarta Selatan", "Jakarta Barat", "Jakarta Pusat", "Bandung", "Semarang"];
-const DURASI_OPTIONS   = ["Durasi Magang", "1 Bulan", "2 Bulan", "3 Bulan", "4 Bulan", "6 Bulan"];
-const RATING_OPTIONS   = ["Rating Perusahaan", "5 Bintang", "4+ Bintang", "3+ Bintang"];
-
-function FilterSelect({ options, value, onChange }: { options: string[]; value: string; onChange: (v: string) => void }) {
-  return (
-    <div className="relative">
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="appearance-none w-full text-sm text-gray-600 bg-white border border-gray-200 rounded-xl px-4 py-2.5 pr-8 focus:outline-none focus:ring-2 focus:ring-indigo-400 cursor-pointer"
-      >
-        {options.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
-      </select>
-      <svg className="w-4 h-4 absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-      </svg>
-    </div>
-  );
-}
 
 export default function CalonDashboard() {
   const router = useRouter();
@@ -35,11 +14,26 @@ export default function CalonDashboard() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loadingCompanies, setLoadingCompanies] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // `query` = teks yang lagi diketik user di input.
+  // `appliedSearch` = teks yang beneran dipakai buat fetch (di-commit lewat
+  // Enter / tombol cari). Dipisah dari `query` supaya kita punya state yang
+  // berubah setiap kali user submit — jadi bisa taruh di dependency array
+  // useEffect. Sebelumnya cuma `setPage(1)` yang dipanggil pas submit, dan
+  // kalau page memang udah 1, state gak berubah sama sekali → effect gak
+  // retrigger → request baru dengan search terbaru gak pernah kekirim.
   const [query, setQuery] = useState("");
-  const [lowongan, setLowongan] = useState("Semua Lowongan");
-  const [lokasi, setLokasi] = useState("Lokasi");
-  const [durasi, setDurasi] = useState("Durasi Magang");
-  const [rating, setRating] = useState("Rating Perusahaan");
+  const [appliedSearch, setAppliedSearch] = useState("");
+
+  // ✅ Value filter sekarang langsung berupa value backend ("" = semua).
+  // Mapping label -> value hidup di components/filter/*, jadi konsisten
+  // dengan page (public)/perusahaan dan gak ada lagi celah lupa mapping
+  // (mis. durasi "> 5 Bulan" dikirim mentah-mentah ke backend).
+  const [divisi, setDivisi] = useState("");
+  const [lokasi, setLokasi] = useState("");
+  const [durasi, setDurasi] = useState("");
+  const [rating, setRating] = useState("");
+
   const [page, setPage] = useState(1);
   const [meta, setMeta] = useState({ current_page: 1, last_page: 1, total: 0 });
 
@@ -50,13 +44,11 @@ export default function CalonDashboard() {
     const params = new URLSearchParams();
     params.set("page", String(page));
     params.set("per_page", "30");
-    if (query)                         params.set("search", query);
-    if (lokasi !== "Lokasi")           params.set("kota", lokasi);
-    if (lowongan !== "Semua Lowongan") params.set("divisi", lowongan);
-    if (durasi !== "Durasi Magang")    params.set("durasi", durasi);
-    if (rating === "5 Bintang")        params.set("min_rating", "5");
-    if (rating === "4+ Bintang")       params.set("min_rating", "4");
-    if (rating === "3+ Bintang")       params.set("min_rating", "3");
+    if (appliedSearch) params.set("search", appliedSearch);
+    if (lokasi) params.set("kota", lokasi);
+    if (divisi) params.set("divisi", divisi);
+    if (durasi) params.set("durasi", durasi);
+    if (rating) params.set("min_rating", rating);
 
     fetch(`${API_BASE}/companies?${params}`)
       .then((r) => {
@@ -80,15 +72,16 @@ export default function CalonDashboard() {
 
   useEffect(() => {
     fetchCompanies();
-  }, [lowongan, lokasi, durasi, rating, page]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appliedSearch, divisi, lokasi, durasi, rating, page]);
 
   useEffect(() => {
-    // Reset to first page when filters change
+    // Reset to first page when filters/search change
     setPage(1);
-  }, [lowongan, lokasi, durasi, rating]);
+  }, [appliedSearch, divisi, lokasi, durasi, rating]);
 
   function handleSearchSubmit() {
-    setPage(1);
+    setAppliedSearch(query);
   }
 
   const firstName = profile?.name?.split(" ")[0] ?? "";
@@ -178,10 +171,10 @@ export default function CalonDashboard() {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <FilterSelect options={LOWONGAN_OPTIONS} value={lowongan} onChange={setLowongan} />
-          <FilterSelect options={LOKASI_OPTIONS}   value={lokasi}   onChange={setLokasi} />
-          <FilterSelect options={DURASI_OPTIONS}   value={durasi}   onChange={setDurasi} />
-          <FilterSelect options={RATING_OPTIONS}   value={rating}   onChange={setRating} />
+          <FilterDivisi value={divisi} onChange={setDivisi} />
+          <FilterLokasi value={lokasi} onChange={setLokasi} />
+          <FilterDurasi value={durasi} onChange={setDurasi} />
+          <FilterRating value={rating} onChange={setRating} />
         </div>
       </div>
 

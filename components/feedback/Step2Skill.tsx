@@ -207,8 +207,7 @@ export default function Step2Skill({ data, onChange, onNext, onBack }: Step2Prop
       {/* Footer */}
       <div className="flex items-center justify-between pt-2">
         <p className="text-xs text-gray-500">
-          <span className="text-red-500">(*)</span> Form wajib diisi dan apabila field kosong akan menampilkan
-          order merah dan pesan error di bawahnya.
+          <span className="text-red-500">(*)</span> Form wajib diisi dan tidak bisa dikosongkan.
         </p>
         <div className="flex gap-3">
           <button

@@ -16,6 +16,12 @@ interface DivisionOption {
   company?: { name: string };
 }
 
+interface CompanyOption {
+  id: number;
+  name: string;
+  kota?: string | null;
+}
+
 interface Step1Props {
   data: Step1Data;
   onChange: (data: Step1Data) => void;
@@ -28,31 +34,76 @@ export const DURASI_MAP: Record<string, string> = {
   "3 - 5 Bulan": "3-5",
   "> 5 Bulan": ">5",
 };
-
 const DURASI_OPTIONS = Object.keys(DURASI_MAP);
 
 export default function Step1Perusahaan({ data, onChange, onNext }: Step1Props) {
   const [errors, setErrors] = useState<Partial<Step1Data>>({});
+
+  // ── Autocomplete: Nama Perusahaan (histori company yang sudah ada) ─────────
+  const [companyOptions, setCompanyOptions] = useState<CompanyOption[]>([]);
+  const [showCompanyDropdown, setShowCompanyDropdown] = useState(false);
+  const [loadingCompany, setLoadingCompany] = useState(false);
+  const companyDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const companyDropdownRef = useRef<HTMLDivElement>(null);
+
+  const fetchCompanies = async (search: string) => {
+    setLoadingCompany(true);
+    try {
+      const token = localStorage.getItem("access_token");
+      const params = search ? `?search=${encodeURIComponent(search)}` : "";
+      // GET /companies publik (tidak wajib login), tapi tetap kirim token kalau ada
+      const json = await apiGet(`/companies${params}`, token);
+      setCompanyOptions(json.data ?? []);
+    } catch (err) {
+      console.error("Gagal fetch companies:", err);
+      setCompanyOptions([]);
+    } finally {
+      setLoadingCompany(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCompanies("");
+  }, []);
+
+  const handleCompanyInput = (val: string) => {
+    onChange({ ...data, namaPerusahaan: val });
+    setShowCompanyDropdown(true);
+    if (companyDebounceRef.current) clearTimeout(companyDebounceRef.current);
+    companyDebounceRef.current = setTimeout(() => fetchCompanies(val), 300);
+  };
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (companyDropdownRef.current && !companyDropdownRef.current.contains(e.target as Node)) {
+        setShowCompanyDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  // ── Autocomplete: Divisi / posisi magang ────────────────────────────────────
   const [divisiOptions, setDivisiOptions] = useState<DivisionOption[]>([]);
   const [showDivisiDropdown, setShowDivisiDropdown] = useState(false);
   const [loadingDivisi, setLoadingDivisi] = useState(false);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-    const fetchDivisions = async (search: string) => {
-      setLoadingDivisi(true);
-      try {
-        const token = localStorage.getItem("access_token");
-        const params = search ? `?search=${encodeURIComponent(search)}` : "";
-        const json = await apiGet(`/divisions${params}`, token);
-        setDivisiOptions(json.data || []);
-      } catch (err) {
-        console.error("Gagal fetch divisions:", err);
-        setDivisiOptions([]);
-      } finally {
-        setLoadingDivisi(false);
-      }
-    };
+  const fetchDivisions = async (search: string) => {
+    setLoadingDivisi(true);
+    try {
+      const token = localStorage.getItem("access_token");
+      const params = search ? `?search=${encodeURIComponent(search)}` : "";
+      const json = await apiGet(`/divisions${params}`, token);
+      setDivisiOptions(json.data ?? []);
+    } catch (err) {
+      console.error("Gagal fetch divisions:", err);
+      setDivisiOptions([]);
+    } finally {
+      setLoadingDivisi(false);
+    }
+  };
 
   // Fetch divisions on mount untuk suggestions awal
   useEffect(() => {
@@ -90,20 +141,51 @@ export default function Step1Perusahaan({ data, onChange, onNext }: Step1Props) 
 
   return (
     <div className="space-y-6">
-      {/* Nama Perusahaan */}
-      <div>
+      {/* Nama Perusahaan — dengan autocomplete dari histori company di BE */}
+      <div ref={companyDropdownRef}>
         <label className="block text-sm font-medium text-gray-800 mb-1">
           Nama perusahaan <span className="text-red-500">*</span>
         </label>
-        <input
-          type="text"
-          value={data.namaPerusahaan}
-          onChange={(e) => onChange({ ...data, namaPerusahaan: e.target.value })}
-          placeholder="Contoh: Tokopedia"
-          className={`w-full px-4 py-3 rounded-lg border text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition placeholder-gray-400 ${
-            errors.namaPerusahaan ? "border-red-500" : "border-gray-200"
-          }`}
-        />
+        <div className="relative">
+          <input
+            type="text"
+            value={data.namaPerusahaan}
+            onChange={(e) => handleCompanyInput(e.target.value)}
+            onFocus={() => setShowCompanyDropdown(true)}
+            placeholder="Contoh: Tokopedia"
+            className={`w-full px-4 py-3 rounded-lg border text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition pr-24 placeholder-gray-400 ${
+              errors.namaPerusahaan ? "border-red-500" : "border-gray-200"
+            }`}
+          />
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">
+            Cari perusahaan
+          </span>
+          {showCompanyDropdown && (companyOptions.length > 0 || loadingCompany) && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 max-h-52 overflow-y-auto">
+              {loadingCompany ? (
+                <div className="px-4 py-3 text-xs text-gray-400">Mencari...</div>
+              ) : (
+                companyOptions.map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      onChange({ ...data, namaPerusahaan: opt.name });
+                      setShowCompanyDropdown(false);
+                    }}
+                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-800 transition"
+                  >
+                    <span className="font-medium">{opt.name}</span>
+                    {opt.kota && (
+                      <span className="text-xs text-gray-400 ml-2">— {opt.kota}</span>
+                    )}
+                  </button>
+                ))
+              )}
+            </div>
+          )}
+        </div>
         {errors.namaPerusahaan && (
           <p className="mt-1 text-xs text-red-500">{errors.namaPerusahaan}</p>
         )}
@@ -128,7 +210,6 @@ export default function Step1Perusahaan({ data, onChange, onNext }: Step1Props) 
           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">
             Cari divisi
           </span>
-
           {showDivisiDropdown && (divisiOptions.length > 0 || loadingDivisi) && (
             <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 max-h-52 overflow-y-auto">
               {loadingDivisi ? (
@@ -215,8 +296,7 @@ export default function Step1Perusahaan({ data, onChange, onNext }: Step1Props) 
       {/* Footer */}
       <div className="flex items-center justify-between pt-2">
         <p className="text-xs text-gray-500">
-          <span className="text-red-500">(*)</span> Form wajib diisi dan apabila field kosong akan menampilkan
-          order merah dan pesan error di bawahnya.
+          <span className="text-red-500">(*)</span> Form wajib diisi dan tidak bisa dikosongkan.
         </p>
         <button
           onClick={() => { if (validate()) onNext(); }}
